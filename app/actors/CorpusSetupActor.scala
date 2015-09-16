@@ -8,8 +8,9 @@ import org.apache.spark.SparkContext
 import org.json4s.DefaultFormats
 import org.json4s.jackson.JsonMethods._
 import play.api.Logger
+import util.SourceUtil
 
-import scala.io.Source
+import scala.io.{BufferedSource, Source}
 
 object CorpusSetupActor {
 
@@ -36,18 +37,19 @@ class CorpusSetupActor(sparkContext: SparkContext) extends Actor {
         implicit val formats = DefaultFormats
         val trimmed = r.map(_.replaceAll("\"",""))
         val (label, id) = (trimmed(1), trimmed(2))
-        try {
-          val tweet = parse(Source.fromFile(s"data/rawdata/$id.json").mkString)
-          val tweetText = if ((tweet \ "user" \ "lang").extract[String] == "en") (tweet \ "text").extract[String] else ""
-          CorpusItem(label, tweetText)
-        } catch {
-          case e: Exception => CorpusItem(label, "")
+        SourceUtil.readSourceOpt(s"data/rawdata/$id.json") { maybeBufferedSource =>
+          maybeBufferedSource match {
+            case Some(bufferedSource) =>
+              val tweet = parse(bufferedSource.mkString)
+              val tweetText = if ((tweet \ "user" \ "lang").extract[String] == "en") (tweet \ "text").extract[String] else ""
+              CorpusItem(label, tweetText)
+            case _ => CorpusItem(label, "")
+          }
         }
       }
       .filter(_.tweet != "")
 
       batchTrainer ! Test(corpus)
     }
-
   }
 }
