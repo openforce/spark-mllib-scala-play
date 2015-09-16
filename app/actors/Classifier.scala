@@ -1,7 +1,7 @@
 package actors
 
-import actors.BatchTrainingActor.Test
-import akka.actor.{Actor, Props}
+import actors.Classifier.{Predict, Train}
+import akka.actor.{ActorRef, Actor, Props}
 import models.CorpusItem
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.Pipeline
@@ -14,15 +14,17 @@ import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 import play.api.Logger
 import twitter.LinguisticTransformer
 
-object BatchTrainingActor {
+object Classifier {
 
-  def props(sparkContext: SparkContext) = Props(new BatchTrainingActor(sparkContext))
+  def props(sparkContext: SparkContext, vectorizer: ActorRef, twitterHandler: ActorRef) = Props(new Classifier(sparkContext, vectorizer, twitterHandler))
 
-  case class Test(corpus: RDD[CorpusItem])
+  case class Train(corpus: RDD[CorpusItem])
+
+  case class Predict(token: String)
 
 }
 
-class BatchTrainingActor(sparkContext: SparkContext) extends Actor {
+class Classifier(sparkContext: SparkContext, vectorizer: ActorRef, twitterHandler: ActorRef) extends Actor {
 
   val log = Logger(this.getClass)
   val sqlContext = new SQLContext(sparkContext)
@@ -31,7 +33,9 @@ class BatchTrainingActor(sparkContext: SparkContext) extends Actor {
 
   override def receive = {
 
-    case Test(corpus: RDD[CorpusItem]) => {
+    case Train(corpus: RDD[CorpusItem]) => {
+
+      log.info(s"Start training")
 
       val data: DataFrame = corpus
         .toDF
@@ -92,6 +96,8 @@ class BatchTrainingActor(sparkContext: SparkContext) extends Actor {
       val precision = correct / total
       log.info(s"precision: ${precision}")
     }
+
+    case Predict(token: String) => log.info(s"Start predicting")
   }
 
 }

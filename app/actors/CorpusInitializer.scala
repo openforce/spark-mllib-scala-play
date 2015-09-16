@@ -1,8 +1,8 @@
 package actors
 
-import actors.BatchTrainingActor.Test
-import actors.CorpusSetupActor.Init
-import akka.actor.{Actor, Props}
+import actors.Classifier.Train
+import actors.CorpusInitializer.Init
+import akka.actor.{ActorRef, Actor, Props}
 import models.CorpusItem
 import org.apache.spark.SparkContext
 import org.json4s.DefaultFormats
@@ -12,18 +12,18 @@ import util.SourceUtil
 
 import scala.io.{BufferedSource, Source}
 
-object CorpusSetupActor {
+object CorpusInitializer {
 
-  def props(sparkContext: SparkContext) = Props(new CorpusSetupActor(sparkContext))
+  def props(sparkContext: SparkContext, classifier: ActorRef) = Props(new CorpusInitializer(sparkContext, classifier))
 
   case object Init
 }
 
-class CorpusSetupActor(sparkContext: SparkContext) extends Actor {
+class CorpusInitializer(sparkContext: SparkContext, classifier: ActorRef) extends Actor {
 
   val log = Logger(this.getClass)
 
-  val batchTrainer = context.actorOf(BatchTrainingActor.props(sparkContext), "batch-trainer")
+  self ! Init
 
   override def receive = {
 
@@ -49,7 +49,9 @@ class CorpusSetupActor(sparkContext: SparkContext) extends Actor {
       }
       .filter(_.tweet != "")
 
-      batchTrainer ! Test(corpus)
+      classifier ! Train(corpus)
+
+//      context.stop(self)
     }
   }
 }

@@ -3,4 +3,5 @@
 # ~~~~
 
 # Home page
-GET           /setupCorpus                                                           @controllers.Application.setupCorpus
+
+GET  /predict              @controllers.Application.predict(token: String)
