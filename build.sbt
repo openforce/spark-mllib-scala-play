@@ -1,3 +1,5 @@
+import play.sbt.PlayScala
+
 name := """spark-mllib-scala-play"""
 
 version := "1.0"
@@ -6,7 +8,7 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 
 scalaVersion := "2.11.7"
 
-val sparkVersion = "1.4.0"
+val sparkVersion = "1.5.0"
 
 // Needed as SBT's classloader doesn't work well with Spark
 fork := true
@@ -14,7 +16,7 @@ fork := true
 // BUG: unfortunately, it's not supported right now
 fork in console := true
 
-javacOptions ++= Seq("-source", "1.7", "-target", "1.7")
+javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
 
 // add a JVM option to use when forking a JVM for 'run'
 javaOptions ++= Seq("-Xmx2G")
@@ -27,15 +29,20 @@ resolvers ++= Seq(
   "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository"
   )
 
-val sparkDependencyScope = "provided"
-
 libraryDependencies ++= Seq(
-  "org.apache.spark" %% "spark-core" % sparkVersion % sparkDependencyScope,
-  "org.apache.spark" %% "spark-sql" % sparkVersion % sparkDependencyScope,
-  "org.apache.spark" %% "spark-mllib" % sparkVersion % sparkDependencyScope,
-  "org.apache.spark" %% "spark-streaming" % sparkVersion % sparkDependencyScope,
+  "org.scalatest" %% "scalatest" % "2.2.4" % "test",
+  "org.apache.spark" %% "spark-core" % sparkVersion,
+  "org.apache.spark" %% "spark-sql" % sparkVersion,
+  "org.apache.spark" %% "spark-mllib" % sparkVersion,
+  "org.apache.spark" %% "spark-streaming" % sparkVersion,
   "org.jblas" % "jblas" % "1.2.4"
 )
+
+dependencyOverrides ++= Set(
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.4"
+)
+
+lazy val root = (project in file(".")).enablePlugins(PlayScala)
 
 val sparkMode = sys.env.getOrElse("SPARK_MODE", "local[*]")
 

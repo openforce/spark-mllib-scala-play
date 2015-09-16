@@ -1,0 +1,6 @@
+# Routes
+# This file defines all application routes
+# ~~~~
+
+# Home page
+GET           /setupCorpus                                                           @controllers.Application.setupCorpus
