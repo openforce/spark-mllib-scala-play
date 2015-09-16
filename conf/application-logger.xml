@@ -27,6 +27,10 @@
         <appender ref="STDOUT" />
     </logger>
 
+    <logger name="org.apache.hadoop" level="WARN">
+        <appender ref="STDOUT" />
+    </logger>
+
     <logger name="breeze.optimize" level="WARN">
         <appender ref="STDOUT" />
     </logger>
