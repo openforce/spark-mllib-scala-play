@@ -2,7 +2,7 @@ package controllers
 
 import javax.inject._
 
-import actors.Classifier.Predict
+import actors.Classifier.{PredictResults, Predict}
 import actors.Receptionist
 import actors.Receptionist.GetClassifier
 import akka.actor.{ActorRef, ActorSystem}
@@ -18,13 +18,13 @@ class Application @Inject() (system: ActorSystem, sparkContext: SparkContext) ex
 
   val receptionist = system.actorOf(Receptionist.props(sparkContext), "receptionist")
 
-  implicit val timeout = Timeout(5.seconds)
+  implicit val timeout = Timeout(10.minutes)
 
   def predict(token: String) = Action.async {
-    (receptionist ? GetClassifier).mapTo[ActorRef].map {
-      classifier => classifier ! Predict(token)
-      Ok
-    }
+    for {
+      classifier <- (receptionist ? GetClassifier).mapTo[ActorRef]
+      predictResults <- (classifier ? Predict(token)).mapTo[PredictResults]
+    } yield Ok(predictResults.result.mkString("\n"))
   }
 
 }

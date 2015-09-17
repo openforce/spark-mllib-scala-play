@@ -1,10 +1,12 @@
 package actors
 
-import actors.Classifier.{Predict, Train}
+import actors.Classifier._
+import actors.TwitterHandler.{FetchResult, Fetch}
 import akka.actor.{ActorRef, Actor, Props}
+import akka.util.Timeout
 import models.CorpusItem
 import org.apache.spark.SparkContext
-import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.{Model, Pipeline}
 import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator
 import org.apache.spark.ml.feature.{Tokenizer, StringIndexer, Word2Vec}
@@ -13,6 +15,10 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 import play.api.Logger
 import twitter.LinguisticTransformer
+import akka.pattern._
+import scala.collection.immutable.Queue
+import scala.concurrent.duration._
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
 object Classifier {
 
@@ -22,16 +28,28 @@ object Classifier {
 
   case class Predict(token: String)
 
+  case class PredictResult(tweet: String, sentiment: String)
+
+  case class PredictResults(result: Array[PredictResult])
+
+  case object Dequeue
+
 }
 
 class Classifier(sparkContext: SparkContext, vectorizer: ActorRef, twitterHandler: ActorRef) extends Actor {
+
+  implicit val timeout = Timeout(5.seconds)
 
   val log = Logger(this.getClass)
   val sqlContext = new SQLContext(sparkContext)
 
   import sqlContext.implicits._
 
-  override def receive = {
+  var pendingQueue = Queue.empty[Predict]
+
+  override def receive = training
+
+  def training: Receive = {
 
     case Train(corpus: RDD[CorpusItem]) => {
 
@@ -95,9 +113,38 @@ class Classifier(sparkContext: SparkContext, vectorizer: ActorRef, twitterHandle
 
       val precision = correct / total
       log.info(s"precision: ${precision}")
+
+      context.become(predicting(cvModel.bestModel))
+
+      self ! Dequeue
     }
 
-    case Predict(token: String) => log.info(s"Start predicting")
+    case msg@Predict(token) => pendingQueue = pendingQueue enqueue msg
+
+  }
+
+  def predicting(model: Model[_]): Receive = {
+
+    case Dequeue =>
+      while (pendingQueue.nonEmpty) {
+        val (predict, newQ) = pendingQueue.dequeue
+        self ! predict
+        pendingQueue = newQ
+      }
+
+    case Predict(token: String) =>
+      log.info(s"Start predicting")
+      val client = sender
+      (twitterHandler ? Fetch(token)).mapTo[FetchResult] map { fr =>
+        val res = model
+          .transform(sparkContext.parallelize(fr.tweets.map(t => CorpusItem("", t)))
+          .toDF())
+          .select("tweet", "prediction")
+          .collect()
+          .map { case Row(tweet: String, sentiment: String) => PredictResult(tweet, sentiment) }
+        client ! res
+      }
+
   }
 
 }
