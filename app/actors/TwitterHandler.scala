@@ -3,14 +3,10 @@ package actors
 
 import actors.TwitterHandler.{Fetch, FetchResult}
 import akka.actor.{Actor, Props}
-import com.google.gson.Gson
 import org.apache.spark.SparkContext
-import org.apache.spark.streaming.{Duration, StreamingContext}
-import org.apache.spark.streaming.twitter.TwitterUtils
 import play.api.Logger
 import play.api.Play.{configuration, current}
 import twitter.Collect
-import twitter4j.auth.OAuthAuthorization
 import twitter4j.conf.{Configuration, ConfigurationBuilder}
 
 object TwitterHandler {

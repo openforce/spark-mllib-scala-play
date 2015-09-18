@@ -22,6 +22,7 @@
     <logger name="akka" level="INFO" />
     <!-- Set a specific actor to DEBUG -->
     <logger name="actors" level="DEBUG" />
+    <logger name="twitter" level="DEBUG" />
 
     <logger name="org.apache.spark" level="WARN">
         <appender ref="STDOUT" />
