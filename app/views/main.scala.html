@@ -1,0 +1,14 @@
+@(title: String)(content: Html)
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>@title</title>
+        <script src='@routes.Assets.at("javascripts/vendor/webcomponentsjs/webcomponents-lite.min.js")'></script>
+        <link rel="import" href='@routes.Assets.at("javascripts/vendor/paper-styles/paper-styles.html")'>
+        <link rel="import" href='@routes.Assets.at("javascripts/vendor/paper-button/paper-button.html")'>
+        <link rel="import" href='@routes.Assets.at("javascripts/vendor/paper-input/paper-input.html")'>
+    </head>
+    <body>
+        <section class="content">@content</section>
+    </body>
+</html>

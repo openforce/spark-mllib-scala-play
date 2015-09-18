@@ -4,4 +4,8 @@
 
 # Home page
 
-GET  /predict              @controllers.Application.predict(token: String)
+GET        /                    @controllers.Application.index
+GET        /predict             @controllers.Application.predict(token: String)
+
+# Assets
+GET        /assets/*file        controllers.Assets.at(path="/public", file)

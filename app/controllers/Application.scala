@@ -27,6 +27,10 @@ class Application @Inject() (system: ActorSystem, sparkContext: SparkContext) ex
     } yield Ok(predictResults.result.mkString("\n"))
   }
 
+  def index = Action {
+    Ok(views.html.index.render())
+  }
+
 }
 
 
