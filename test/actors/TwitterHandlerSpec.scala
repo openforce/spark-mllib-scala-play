@@ -23,9 +23,9 @@ class TwitterHandlerSpec extends TestKit(ActorSystem("TwitterHandlerSpec"))
     val cb = new ConfigurationBuilder()
     cb.setDebugEnabled(true)
       .setOAuthConsumerKey(myConfig.getString("consumer.key"))
-      .setOAuthConsumerSecret(myConfig.getString("my.config.prefix"))
-      .setOAuthAccessToken(myConfig.getString("my.config.prefix"))
-      .setOAuthAccessTokenSecret(myConfig.getString("my.config.prefix"))
+      .setOAuthConsumerSecret(myConfig.getString("consumer.secret"))
+      .setOAuthAccessToken(myConfig.getString("access-token.key"))
+      .setOAuthAccessTokenSecret(myConfig.getString("access-token.secret"))
       .build()
   }
 
@@ -33,7 +33,7 @@ class TwitterHandlerSpec extends TestKit(ActorSystem("TwitterHandlerSpec"))
 
     "fetch tweets" in {
 
-      val real = TestActorRef[TwitterHandler](TwitterHandler.props(SparkUtil.sparkContext, configuration))
+      val real = TestActorRef[TwitterHandler](TwitterHandler.props(SparkUtil.sparkContext, config))
       real ! Fetch("Apple")
 
       expectMsg(FetchResult("Apple", Seq("I like Apple")))
