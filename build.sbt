@@ -31,10 +31,13 @@ resolvers ++= Seq(
 
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "2.2.4" % "test",
+  "com.typesafe.akka" %% "akka-testkit" % "2.3.14" % "test",
   "org.apache.spark" %% "spark-core" % sparkVersion,
   "org.apache.spark" %% "spark-sql" % sparkVersion,
   "org.apache.spark" %% "spark-mllib" % sparkVersion,
   "org.apache.spark" %% "spark-streaming" % sparkVersion,
+  "org.apache.spark" %% "spark-streaming-twitter" % sparkVersion,
+  "org.twitter4j" % "twitter4j-core" % "4.0.4",
   "org.jblas" % "jblas" % "1.2.4"
 )
 

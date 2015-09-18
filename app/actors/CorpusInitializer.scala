@@ -51,7 +51,7 @@ class CorpusInitializer(sparkContext: SparkContext, classifier: ActorRef) extend
 
       classifier ! Train(corpus)
 
-//      context.stop(self)
+      context.stop(self)
     }
   }
 }
