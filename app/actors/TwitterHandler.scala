@@ -24,7 +24,7 @@ class TwitterHandler(sparkContext: SparkContext) extends Actor {
         token,
         Seq(
           "Awesome lectures on Deep Learning at Oxford 2015 by @NandoDF https://www.youtube.com/playlist?list=PLE6Wd9FR--EfW8dtjAuPoTuPcqmOV53Fu Great job :)",
-          "Had no sleep last night... my neighbor got his new subwoofer... gosh he's killing me...too bad"
+          "#Microsoft licensing process is annoying !!!"
         )
       )
     case undefined => log.info(s"Unexpected message $undefined")
