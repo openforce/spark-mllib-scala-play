@@ -1,0 +1,5 @@
+package twitter
+
+object Collect {
+
+}
