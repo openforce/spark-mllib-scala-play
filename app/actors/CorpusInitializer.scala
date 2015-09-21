@@ -29,7 +29,7 @@ class CorpusInitializer(sparkContext: SparkContext, classifier: ActorRef) extend
 
     case Init => {
 
-      log.info(s"Init corpus")
+      log.info(s"Initialize tweets corpus")
 
       val corpus = sparkContext.textFile("data/corpus.csv")
         .map { _.split(",") }
