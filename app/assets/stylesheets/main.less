@@ -1,3 +1,40 @@
 paper-button {
   background-color: #999;
 }
+
+paper-material.paper-material-0.custom {
+  width: ~"calc(98.66% - 16px)"; // bootstrap fix
+}
+
+.search-box {
+  width: ~"calc(100% - 128px)";
+  margin: 64px 64px 0;
+}
+
+paper-progress {
+  width: 100%;
+}
+
+.card-container {
+  padding: 32px 48px;
+  width: 100%;
+  box-sizing: border-box;
+
+  paper-card {
+    margin: 16px;
+    width: ~"calc(50% - 34px)";
+    display: inline-block;
+
+    &.negative {
+      background-color: rgba(169, 68, 66, .5);
+    }
+
+    &.positive {
+      background-color: rgba(60, 118, 61, .4);
+    }
+
+    .card-actions {
+      text-align: right;
+    }
+  }
+}

@@ -4,6 +4,7 @@
     <head>
         <title>@title</title>
         <script src='@routes.Assets.at("javascripts/vendor/webcomponentsjs/webcomponents-lite.min.js")'></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
         <link rel="import" href='@routes.Assets.at("templates/elements.html")'>
         <link rel="import" href='@routes.Assets.at("stylesheets/vendor/ice.html")'>
         <link rel="stylesheet" href='@routes.Assets.at("stylesheets/main.css")'/>
@@ -12,11 +13,15 @@
         <style is="custom-style" include="shared-styles"></style>
     </head>
     <body unresolved class="fullbleed layout vertical">
+        <span id="browser-sync-binding"></span>
         <template is="dom-bind" id="app">
+                <!-- Main Area -->
             <paper-scroll-header-panel main condenses keep-condensed-header>
+
                     <!-- Main Toolbar -->
                 <paper-toolbar id="mainToolbar" class="tall">
                     <span class="flex"></span>
+
                         <!-- Toolbar icons -->
                     <paper-icon-button icon="refresh"></paper-icon-button>
 
@@ -31,11 +36,12 @@
                     </div>
 
                 </paper-toolbar>
-                <div class="content">
-                    <iron-pages>@content</iron-pages>
-                </div>
+
+                    <!-- Main Content -->
+                <div class="content">@content</div>
             </paper-scroll-header-panel>
         </template>
+        <link rel="import" href='@routes.Assets.at("libraries.html")'>
         <script src='@routes.Assets.at("javascripts/main.js")'></script>
     </body>
 </html>

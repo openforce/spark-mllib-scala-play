@@ -7,7 +7,9 @@ resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/release
 // Use the Play sbt plugin for Play projects
 addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.4.2")
 
-// Add SbtWeb and Traceur
+// Add SbtWeb
 addSbtPlugin("com.typesafe.sbt" % "sbt-web" % "1.1.1")
 
+// Add preprocessors
+addSbtPlugin("com.typesafe.sbt" % "sbt-less" % "1.1.0")
 addSbtPlugin("com.typesafe.sbt" % "sbt-traceur" % "1.0.0")

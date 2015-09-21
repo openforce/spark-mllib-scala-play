@@ -1,14 +1,46 @@
 @main(title = "Twitter sentiment analysis", subtitle = "Done with Spark, MLlib, Scala and Play!") {
 
-    <section class="container">
-        <paper-material>
-            <div class="horizontal center-justified">
-                <h3>Enter a keyword</h3>
-                <paper-input label="Enter token"></paper-input>
-                <paper-button id="start-predicting">Predict</paper-button>
-                <paper-progress value="0" class="x-scope paper-progress-0 hidden"></paper-progress>
+    <form class="search-box">
+        <h3>Enter a keyword</h3>
+        <p>
+            The keyword you enter will be used to search twitter for tweets.
+            The found tweets will be fed into our evaluation engine and the engine will automatically decide the sentiment for each tweet.
+        </p>
+        <paper-input label="Keyword" autofocus>
+            <paper-icon-button suffix icon="search" id="start-predicting"></paper-icon-button>
+        </paper-input>
+        <paper-progress indeterminate></paper-progress>
+    </form>
+
+    <div class="card-container">
+        <paper-card class="positive">
+            <div class="card-content">Some content</div>
+            <div class="card-actions">
+                <paper-icon-button icon="thumb-down" class="negative"></paper-icon-button>
+                <paper-icon-button icon="thumb-up" class="positive"></paper-icon-button>
             </div>
-        </paper-material>
-    </section>
+        </paper-card>
+        <paper-card class="negative">
+            <div class="card-content">Some content</div>
+            <div class="card-actions">
+                <paper-icon-button icon="thumb-down" class="negative"></paper-icon-button>
+                <paper-icon-button icon="thumb-up" class="positive"></paper-icon-button>
+            </div>
+        </paper-card>
+        <paper-card>
+            <div class="card-content" class="negative">Some content</div>
+            <div class="card-actions">
+                <paper-icon-button icon="thumb-down" class="negative"></paper-icon-button>
+                <paper-icon-button icon="thumb-up" class="positive"></paper-icon-button>
+            </div>
+        </paper-card>
+        <paper-card>
+            <div class="card-content">Some content</div>
+            <div class="card-actions">
+                <paper-icon-button icon="thumb-down" class="negative"></paper-icon-button>
+                <paper-icon-button icon="thumb-up" class="positive"></paper-icon-button>
+            </div>
+        </paper-card>
+    </div>
 
 }
