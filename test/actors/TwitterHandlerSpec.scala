@@ -1,11 +1,15 @@
 package actors
 
+import java.util.concurrent.TimeUnit
+
 import actors.TwitterHandler.{Fetch, FetchResult}
 import akka.actor.ActorSystem
 import akka.testkit.{TestActorRef, TestKit}
 import modules.SparkUtil
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 import twitter4j.conf.ConfigurationBuilder
+
+import scala.concurrent.duration.FiniteDuration
 
 class TwitterHandlerSpec extends TestKit(ActorSystem("TwitterHandlerSpec"))
                          with Matchers
@@ -36,7 +40,7 @@ class TwitterHandlerSpec extends TestKit(ActorSystem("TwitterHandlerSpec"))
       val real = TestActorRef[TwitterHandler](TwitterHandler.props(SparkUtil.sparkContext, config))
       real ! Fetch("Apple")
 
-      expectMsg(FetchResult("Apple", Seq("I like Apple")))
+      expectMsgClass(FetchResult.getClass)
     }
   }
 
