@@ -55,7 +55,9 @@ class Classifier(sparkContext: SparkContext, vectorizer: ActorRef, twitterHandle
       val train = splits(0)
       val test = splits(1)
 
-      val model = Pipeline.create.fit(train)
+      // val model = Pipeline.create.fit(train)
+      // sparkContext.parallelize(Seq(model), 1).saveAsObjectFile("app/resources/pipeline.model")
+      val model = sparkContext.objectFile[PipelineModel]("app/resources/pipeline.model").first()
 
       var total = 0.0
       var correct = 0.0
