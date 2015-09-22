@@ -20,10 +20,13 @@ class Application @Inject() (system: ActorSystem, sparkContext: SparkContext) ex
 
   implicit val timeout = Timeout(10.minutes)
 
-  def predict(token: String) = Action.async {
+
+
+
+  def predict(keyword: String) = Action.async {
     for {
       classifier <- (receptionist ? GetClassifier).mapTo[ActorRef]
-      predictResults <- (classifier ? Predict(token)).mapTo[PredictResults]
+      predictResults <- (classifier ? Predict(keyword)).mapTo[PredictResults]
     } yield Ok(predictResults.result.mkString("\n"))
   }
 

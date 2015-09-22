@@ -2,6 +2,7 @@ package actors
 
 import actors.Classifier._
 import actors.TwitterHandler.{Fetch, FetchResult}
+import actors.TwitterHandlerCoordinator.FetchFor
 import akka.actor.{Actor, ActorRef, Props}
 import akka.pattern._
 import akka.util.Timeout
@@ -15,6 +16,7 @@ import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 import play.api.Logger
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import twitter.LinguisticTransformer
+import twitter4j.conf.Configuration
 import scala.collection.immutable.Queue
 import scala.concurrent.duration._
 
@@ -36,7 +38,7 @@ object Classifier {
 
 class Classifier(sparkContext: SparkContext, vectorizer: ActorRef, twitterHandler: ActorRef) extends Actor {
 
-  implicit val timeout = Timeout(5.seconds)
+  implicit val timeout = Timeout(5 seconds)
 
   val log = Logger(this.getClass)
   val sqlContext = new SQLContext(sparkContext)

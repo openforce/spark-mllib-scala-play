@@ -1,15 +1,11 @@
 package actors
 
-import java.util.concurrent.TimeUnit
-
 import actors.TwitterHandler.{Fetch, FetchResult}
 import akka.actor.ActorSystem
 import akka.testkit.{TestActorRef, TestKit}
 import modules.SparkUtil
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 import twitter4j.conf.ConfigurationBuilder
-
-import scala.concurrent.duration.FiniteDuration
 
 class TwitterHandlerSpec extends TestKit(ActorSystem("TwitterHandlerSpec"))
                          with Matchers
