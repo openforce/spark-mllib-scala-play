@@ -11,7 +11,7 @@
  subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
  */
 
-(function(document) {
+(function (document) {
     'use strict';
 
     // Grab a reference to our auto-binding template
@@ -19,7 +19,7 @@
     // Learn more about auto-binding templates at http://goo.gl/Dx1u2g
     var app = document.querySelector('#app');
 
-    app.displayInstalledToast = function() {
+    app.displayInstalledToast = function () {
         // Check to make sure caching is actually enabled—it won't be in the dev environment.
         if (!document.querySelector('platinum-sw-cache').disabled) {
             document.querySelector('#caching-complete').show();
@@ -28,8 +28,8 @@
 
     // Listen for template bound event to know when bindings
     // have resolved and content has been stamped to the page
-    app.addEventListener('dom-change', function() {
-        console.log('Our app is ready to rock!');
+    app.addEventListener('dom-change', function () {
+        var api = new API();
 
         /*
          * Wire the frontend
@@ -37,6 +37,12 @@
         $(() => {
             $('.search-box').on('submit', (event) => {
                 $('paper-card').hide(0);
+
+                api
+                    .classify($('paper-input').val())
+                    .then((json) => {
+                        console.log(json);
+                    });
 
                 event.preventDefault();
 
@@ -80,7 +86,7 @@
     });
 
     // See https://github.com/Polymer/polymer/issues/1381
-    window.addEventListener('WebComponentsReady', function() {
+    window.addEventListener('WebComponentsReady', function () {
         // imports are loaded and elements have been registered
     });
 
@@ -88,7 +94,7 @@
     // the appName in the middle-container and the bottom title in the bottom-container.
     // The appName is moved to top and shrunk on condensing. The bottom sub title
     // is shrunk to nothing on condensing.
-    addEventListener('paper-header-transform', function(e) {
+    addEventListener('paper-header-transform', function (e) {
         var appName = document.querySelector('#mainToolbar .app-name');
         var middleContainer = document.querySelector('#mainToolbar .middle-container');
         var bottomContainer = document.querySelector('#mainToolbar .bottom-container');
@@ -96,7 +102,7 @@
         var heightDiff = detail.height - detail.condensedHeight;
         var yRatio = Math.min(1, detail.y / heightDiff);
         var maxMiddleScale = 0.50;  // appName max size when condensed. The smaller the number the smaller the condensed size.
-        var scaleMiddle = Math.max(maxMiddleScale, (heightDiff - detail.y) / (heightDiff / (1-maxMiddleScale))  + maxMiddleScale);
+        var scaleMiddle = Math.max(maxMiddleScale, (heightDiff - detail.y) / (heightDiff / (1 - maxMiddleScale)) + maxMiddleScale);
         var scaleBottom = 1 - yRatio;
 
         // Move/translate middleContainer
@@ -110,7 +116,7 @@
     });
 
     // Close drawer after menu item is selected if drawerPanel is narrow
-    app.onDataRouteClick = function() {
+    app.onDataRouteClick = function () {
         var drawerPanel = document.querySelector('#paperDrawerPanel');
         if (drawerPanel.narrow) {
             drawerPanel.closeDrawer();
@@ -118,8 +124,85 @@
     };
 
     // Scroll page to top and expand header
-    app.scrollPageToTop = function() {
+    app.scrollPageToTop = function () {
         document.getElementById('mainContainer').scrollTop = 0;
     };
 
 })(document);
+
+class API {
+
+    constructor() {
+        this.baseUrl = "/"
+        this.ACTION = {
+            classify: "predict"
+        }
+    }
+
+    /**
+     * creates an api url for an action and search parameters
+     *
+     * @param action
+     * @param searchParameters
+     * @returns {string}
+     * @private
+     */
+    _buildUrl(action, searchParameters) {
+        var url = this.baseUrl + action
+        var search = "?"
+
+        for (keyword in searchParameters) {
+            if (searchParameters.hasOwnProperty(keyword)) {
+                search += `${keyword}=${searchParameters[keyword]}&`
+            }
+        }
+
+        if (search !== "?") {
+            url += search.substr(0, search.length - 1)
+        }
+
+        return url;
+    }
+
+    /**
+     * from https://github.com/github/fetch#handling-http-error-statuses
+     *
+     * fetch doesn't automatically throw an error on http status codes
+     *
+     * @param response
+     * @returns {*}
+     * @private
+     */
+    _checkStatus(response) {
+        if (response.status >= 200 && response.status < 300) {
+            return response
+        } else {
+            var error = new Error(response.statusText)
+            error.response = response
+            throw error
+        }
+    }
+
+    /**
+     *
+     * @param keyword
+     * @param cb
+     */
+    classify(keyword, cb) {
+        var url = this._buildUrl(this.ACTION.classify, {
+            keyword: keyword
+        });
+
+        return new Promise((resolve, reject) => {
+            fetch(url)
+                .then(this._checkStatus)
+                .then((response) => response.json())
+                .then((json) => resolve(json))
+                .catch((ex) => {
+                    console.log(`error occured ${ex}`);
+                    reject(ex);
+                })
+        });
+    }
+
+}

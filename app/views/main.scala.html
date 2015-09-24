@@ -41,7 +41,9 @@
                 <div class="content">@content</div>
             </paper-scroll-header-panel>
         </template>
-        <link rel="import" href='@routes.Assets.at("libraries.html")'>
-        <script src='@routes.Assets.at("javascripts/main.js")'></script>
+
+        <link rel="import" href='@routes.Assets.at("templates/libraries.html")'>
+
+        <script src='@routes.Assets.versioned("javascripts/main.js")'></script>
     </body>
 </html>
