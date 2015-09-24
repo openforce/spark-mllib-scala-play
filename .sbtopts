@@ -1,0 +1,1 @@
+-Dconfig.file=conf/local.conf -Dspark.driver.allowMultipleContexts=true
