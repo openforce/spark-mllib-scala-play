@@ -5,7 +5,10 @@
 # Home page
 
 GET        /                           @controllers.Application.index
-GET        /predict                    @controllers.Application.predict(keyword: String)
+GET        /classify                   @controllers.Application.classify(keyword: String)
+
+# Javascript Routes
+GET        /jsRoutes                   @controllers.Application.jsRoutes
 
 # Assets
 GET        /public-assets/*file        controllers.Assets.at(path="/public", file)

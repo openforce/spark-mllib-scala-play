@@ -1,8 +1,4 @@
 /*
- * Polymer starter kit code
- */
-
-/*
  Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
  This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
  The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
@@ -36,15 +32,17 @@
          */
         $(() => {
             $('.search-box').on('submit', (event) => {
+                event.preventDefault();
+
                 $('paper-card').hide(0);
 
-                api
-                    .classify($('paper-input').val())
+                api .classify($('paper-input').val())
                     .then((json) => {
                         console.log(json);
-                    });
+                    })
+                    .catch((ex) => {
 
-                event.preventDefault();
+                    });
 
                 $('paper-input').velocity('scroll', {
                     container: $('#mainContainer'),
@@ -130,44 +128,29 @@
 
 })(document);
 
+/**
+ * mapping to global *Routes* object from play generated jsRoutes
+ *
+ * @type {{classify: function}}
+ */
+var Routes = {
+    classify: (keyword) => jsRoutes.controllers.Application.classify(keyword).url
+};
+
 class API {
 
     constructor() {
-        this.baseUrl = "/"
-        this.ACTION = {
-            classify: "predict"
-        }
+        this.baseUrl = "/";
     }
 
-    /**
-     * creates an api url for an action and search parameters
-     *
-     * @param action
-     * @param searchParameters
-     * @returns {string}
-     * @private
-     */
-    _buildUrl(action, searchParameters) {
-        var url = this.baseUrl + action
-        var search = "?"
-
-        for (keyword in searchParameters) {
-            if (searchParameters.hasOwnProperty(keyword)) {
-                search += `${keyword}=${searchParameters[keyword]}&`
-            }
-        }
-
-        if (search !== "?") {
-            url += search.substr(0, search.length - 1)
-        }
-
-        return url;
+    routes(route) {
+        return {}[route];
     }
 
     /**
      * from https://github.com/github/fetch#handling-http-error-statuses
      *
-     * fetch doesn't automatically throw an error on http status codes
+     * fetch doesn't automatically throw an error on error http status codes (4xx, 5xx)
      *
      * @param response
      * @returns {*}
@@ -175,23 +158,23 @@ class API {
      */
     _checkStatus(response) {
         if (response.status >= 200 && response.status < 300) {
-            return response
+            return response;
         } else {
-            var error = new Error(response.statusText)
-            error.response = response
-            throw error
+            var error = new Error(response.statusText);
+            error.response = response;
+            throw error;
         }
     }
 
     /**
+     * calls the classify action and returns a promise
+     * the promise will be resolved with the parsed json or rejected if there was an error
      *
      * @param keyword
      * @param cb
      */
     classify(keyword, cb) {
-        var url = this._buildUrl(this.ACTION.classify, {
-            keyword: keyword
-        });
+        var url = Routes.classify(keyword)
 
         return new Promise((resolve, reject) => {
             fetch(url)
