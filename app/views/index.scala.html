@@ -6,41 +6,20 @@
             The keyword you enter will be used to search twitter for tweets.
             The found tweets will be fed into our evaluation engine and the engine will automatically decide the sentiment for each tweet.
         </p>
-        <paper-input label="Keyword" autofocus>
-            <paper-icon-button suffix icon="search" id="start-predicting"></paper-icon-button>
-        </paper-input>
-        <paper-progress indeterminate></paper-progress>
+        <div class="paper-input">
+            <paper-input label="Keyword" autofocus>
+                <paper-icon-button suffix icon="search" id="start-predicting"></paper-icon-button>
+            </paper-input>
+        </div>
+        <div class="paper-progress">
+            <paper-progress indeterminate></paper-progress>
+        </div>
     </form>
 
     <div class="card-container">
-        <paper-card class="positive">
-            <div class="card-content">Some content</div>
-            <div class="card-actions">
-                <paper-icon-button icon="thumb-down" class="negative"></paper-icon-button>
-                <paper-icon-button icon="thumb-up" class="positive"></paper-icon-button>
-            </div>
-        </paper-card>
-        <paper-card class="negative">
-            <div class="card-content">Some content</div>
-            <div class="card-actions">
-                <paper-icon-button icon="thumb-down" class="negative"></paper-icon-button>
-                <paper-icon-button icon="thumb-up" class="positive"></paper-icon-button>
-            </div>
-        </paper-card>
-        <paper-card>
-            <div class="card-content" class="negative">Some content</div>
-            <div class="card-actions">
-                <paper-icon-button icon="thumb-down" class="negative"></paper-icon-button>
-                <paper-icon-button icon="thumb-up" class="positive"></paper-icon-button>
-            </div>
-        </paper-card>
-        <paper-card>
-            <div class="card-content">Some content</div>
-            <div class="card-actions">
-                <paper-icon-button icon="thumb-down" class="negative"></paper-icon-button>
-                <paper-icon-button icon="thumb-up" class="positive"></paper-icon-button>
-            </div>
-        </paper-card>
+        <twitter-cardlist>
+
+        </twitter-cardlist>
     </div>
 
 }

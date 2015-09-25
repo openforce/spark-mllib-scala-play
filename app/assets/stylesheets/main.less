@@ -20,21 +20,32 @@ paper-progress {
   width: 100%;
   box-sizing: border-box;
 
-  paper-card {
+  .paper-card-container {
+    opacity: 0;
     margin: 16px;
     width: ~"calc(50% - 34px)";
     display: inline-block;
 
-    &.negative {
-      background-color: rgba(169, 68, 66, .5);
-    }
+    paper-card {
+      width: 100%;
 
-    &.positive {
-      background-color: rgba(60, 118, 61, .4);
-    }
+      &.negative {
+        background-color: rgba(169, 68, 66, .5);
+      }
 
-    .card-actions {
-      text-align: right;
+      &.positive {
+        background-color: rgba(60, 118, 61, .4);
+      }
+
+      .card-actions {
+        text-align: right;
+      }
     }
+  }
+}
+
+@media(max-device-width: 700px) {
+  .paper-card-container {
+    width: 100%;
   }
 }

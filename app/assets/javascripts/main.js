@@ -26,41 +26,53 @@
     // have resolved and content has been stamped to the page
     app.addEventListener('dom-change', function () {
         var api = new API();
+        var twitterCardList = document.querySelector('twitter-cardlist');
+        var progressBar = document.querySelector('.paper-progress');
+        var searchForm = document.querySelector('.search-box');
+        var searchBox = document.querySelector('paper-input');
+        var container = document.querySelector('#mainContainer');
 
         /*
          * Wire the frontend
          */
-        $(() => {
-            $('.search-box').on('submit', (event) => {
-                event.preventDefault();
+        searchForm.addEventListener('submit', (event) => {
 
-                $('paper-card').hide(0);
+            event.preventDefault();
 
-                api .classify($('paper-input').val())
-                    .then((json) => {
-                        console.log(json);
-                    })
-                    .catch((ex) => {
+            clearCardList();
 
-                    });
+            api.classify(searchBox.value)
+                .then((json) => {
+                    console.log(json);
+                    json.forEach((item) => twitterCardList.push('elements', item));
+                })
+                .catch((ex) => {
 
-                $('paper-input').velocity('scroll', {
-                    container: $('#mainContainer'),
-                    offset: -75,
-                    duration: 400
                 });
 
-                setTimeout(() => $('paper-progress').fadeIn(200));
-                setTimeout(done, 1000 + Math.random() * 2000);
+            Velocity(searchBox.parentNode, 'scroll', {
+                container: container,
+                offset: -75,
+                duration: 400
             });
 
-            // fade out elements
-            $('paper-card, paper-progress').hide(0);
+            setTimeout(() => Velocity(progressBar, "fadeIn", { duration: 200 }));
+            setTimeout(done, 1000 + Math.random() * 2000);
         });
+
+        // fade out elements
+        Velocity(progressBar, "fadeOut", { duration: 0 });
+
+        /**
+         * Clear the twitter-cardlist
+         */
+        var clearCardList = () => {
+            while (twitterCardList.pop('elements') != null);
+        };
 
         var done = () => {
             // get all paper cards (each paper card represents one tweet)
-            var paperCards = $('paper-card');
+            var paperCards = document.querySelectorAll('.paper-card-container');
 
             /**
              * Fade in a single paper-card and set a timeout to fade in the next
@@ -69,9 +81,12 @@
              */
             var fadeIn = (n, duration) => {
                 if (n < paperCards.length) {
-                    $(paperCards[n]).fadeIn(duration);
+                    Velocity(paperCards[n], "fadeIn", {
+                        duration: duration,
+                        display: 'inline-block'
+                    });
 
-                    setTimeout(() => fadeIn(++n, duration), duration - duration / 2);
+                    setTimeout(() => fadeIn(++n, duration), duration / 3);
                 }
             };
 
@@ -79,7 +94,7 @@
             fadeIn(0, 300);
 
             // fade out the paper-progress
-            $('paper-progress').fadeOut(150);
+            Velocity(progressBar, "fadeOut", { duration: 150 });
         };
     });
 
@@ -143,10 +158,6 @@ class API {
         this.baseUrl = "/";
     }
 
-    routes(route) {
-        return {}[route];
-    }
-
     /**
      * from https://github.com/github/fetch#handling-http-error-statuses
      *
@@ -174,7 +185,7 @@ class API {
      * @param cb
      */
     classify(keyword, cb) {
-        var url = Routes.classify(keyword)
+        var url = Routes.classify(keyword);
 
         return new Promise((resolve, reject) => {
             fetch(url)
