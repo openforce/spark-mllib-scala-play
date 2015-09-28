@@ -1,12 +1,12 @@
 package controllers
 
 import javax.inject._
-
 import actors.Classifier._
 import actors.Receptionist
 import actors.Receptionist.GetClassifier
 import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
+import models.LabeledTweet
 import org.apache.spark.SparkContext
 import play.api.libs.json.{Json, JsPath, Writes}
 import play.api.mvc.{Action, Controller}
@@ -21,15 +21,13 @@ class Application @Inject() (system: ActorSystem, sparkContext: SparkContext) ex
   val receptionist = system.actorOf(Receptionist.props(sparkContext), "receptionist")
 
   implicit val timeout = Timeout(10.minutes)
-
-  implicit val predictResultWrites = Json.writes[PredictResult]
-  implicit val predictResultReads = Json.reads[PredictResult]
+  implicit val formats = Json.format[LabeledTweet]
 
   def classify(keyword: String) = Action.async {
     for {
       classifier <- (receptionist ? GetClassifier).mapTo[ActorRef]
-      classificationResults <- (classifier ? Predict(keyword)).mapTo[PredictResults]
-    } yield Ok(Json.toJson(classificationResults.result))
+      classificationResults <- (classifier ? Classify(keyword)).mapTo[Array[LabeledTweet]]
+    } yield Ok(Json.toJson(classificationResults))
   }
 
   def index = Action {

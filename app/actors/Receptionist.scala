@@ -15,11 +15,10 @@ class Receptionist(sparkContext: SparkContext) extends Actor {
 
   val log = Logger(this.getClass)
 
-  val vectorizer = context.actorOf(Vectorizer.props(sparkContext), "vectorizer")
   val twitterHandler = context.actorOf(TwitterHandler.props(sparkContext), "twitter-handler")
-  val classifier = context.actorOf(Classifier.props(sparkContext, vectorizer, twitterHandler), "classifier")
-  val corpusInitializer = context.actorOf(CorpusInitializer.props(sparkContext, classifier), "corpus-initializer")
-
+  val classifier = context.actorOf(Classifier.props(sparkContext, twitterHandler), "classifier")
+  val trainer = context.actorOf(Trainer.props(sparkContext, classifier, twitterHandler), "trainer")
+  val corpusInitializer = context.actorOf(CorpusInitializer.props(sparkContext, trainer), "corpus-initializer")
 
   override def receive = {
 

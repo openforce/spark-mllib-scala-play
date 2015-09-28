@@ -6,106 +6,56 @@ import actors.TwitterHandlerCoordinator.FetchFor
 import akka.actor.{Actor, ActorRef, Props}
 import akka.pattern._
 import akka.util.Timeout
-import models.{CorpusItem, Pipeline}
+import models.LabeledTweet
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.PipelineModel
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, Row, SQLContext}
+import org.apache.spark.sql.{Row, SQLContext}
 import play.api.Logger
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import scala.collection.immutable.Queue
 import scala.concurrent.duration._
 
 object Classifier {
 
-  def props(sparkContext: SparkContext, vectorizer: ActorRef, twitterHandler: ActorRef) = Props(new Classifier(sparkContext, vectorizer, twitterHandler))
+  def props(sparkContext: SparkContext, twitterHandler: ActorRef) = Props(new Classifier(sparkContext, twitterHandler))
 
-  case class Train(corpus: RDD[CorpusItem])
+  case class Classify(token: String)
 
-  case class Predict(token: String)
-
-  case class PredictResult(tweet: String, sentiment: String)
-
-  case class PredictResults(result: Array[PredictResult])
-
-  case object Dequeue
+  case class UpdateModel(model: PipelineModel)
 
 }
 
-class Classifier(sparkContext: SparkContext, vectorizer: ActorRef, twitterHandler: ActorRef) extends Actor {
+class Classifier(sparkContext: SparkContext, twitterHandler: ActorRef) extends Actor {
 
   val log = Logger(this.getClass)
+
   val sqlContext = new SQLContext(sparkContext)
+
   import sqlContext.implicits._
-  var pendingQueue = Queue.empty[Predict]
+
   implicit val timeout = Timeout(5.seconds)
 
-  override def receive = training
+  var pipelineModel: PipelineModel = sparkContext.objectFile[PipelineModel]("app/resources/pipeline.model").first()
 
-  def training: Receive = {
+  override def receive =  {
 
-    case Train(corpus: RDD[CorpusItem]) =>
-
-      log.info(s"Start training")
-
-      val data: DataFrame = corpus
-        .toDF
-        .filter("sentiment in ('positive', 'negative')")
-
-      val splits = data.randomSplit(Array(0.7, 0.3), 42)
-      val train = splits(0)
-      val test = splits(1)
-
-      // val model = Pipeline.create.fit(train)
-      // sparkContext.parallelize(Seq(model), 1).saveAsObjectFile("app/resources/pipeline.model")
-      val model = sparkContext.objectFile[PipelineModel]("app/resources/pipeline.model").first()
-
-      var total = 0.0
-      var correct = 0.0
-
-      model.transform(test)
-        .select("tweet", "sentiment", "label", "probability", "prediction")
-        .collect()
-        .foreach { case Row(tweet, sentiment, label, prob, prediction) =>
-          if (label == prediction) correct += 1
-          total += 1
-          log.info(s"'$tweet': '$sentiment' ($label) --> prediction=$prediction ($prob)")
-        }
-
-      val precision = correct / total
-
-      log.info(s"precision: ${precision}")
-
-      context.become(predicting(model))
-
-      self ! Dequeue
-
-    case msg@Predict(token) => pendingQueue = pendingQueue enqueue msg
-
-  }
-
-  def predicting(model: PipelineModel): Receive = {
-
-    case Dequeue =>
-      while (pendingQueue.nonEmpty) {
-        val (predict, newQ) = pendingQueue.dequeue
-        self ! predict
-        pendingQueue = newQ
-      }
-
-    case Predict(token: String) =>
-      log.info(s"Start predicting")
+    case Classify(token: String) =>
+      log.info(s"Start classifying tweets for token '$token'")
       val client = sender
       (twitterHandler ? Fetch(token)).mapTo[FetchResult] map { fr =>
-        val results = model
-          .transform(sparkContext.parallelize(fr.tweets.map(t => CorpusItem("", t))).toDF())
+        val results = pipelineModel
+          .transform(sparkContext.parallelize(fr.tweets.map(t => LabeledTweet(t, ""))).toDF())
           .select("tweet", "prediction")
           .collect()
           .map { case Row(tweet: String, prediction: Double) =>
-            PredictResult(tweet, prediction.toString)
+            LabeledTweet(tweet, prediction.toString)
           }
-        client ! PredictResults(results)
+        client ! results
       }
+
+    case UpdateModel(model: PipelineModel) =>
+      log.info("Updating model")
+      pipelineModel = model
 
   }
 

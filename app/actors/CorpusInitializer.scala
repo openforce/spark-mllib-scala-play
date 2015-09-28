@@ -1,25 +1,23 @@
 package actors
 
-import actors.Classifier.Train
 import actors.CorpusInitializer.Init
-import akka.actor.{ActorRef, Actor, Props}
-import models.CorpusItem
+import actors.Trainer.ValidateOn
+import akka.actor.{Actor, ActorRef, Props}
+import models.LabeledTweet
 import org.apache.spark.SparkContext
 import org.json4s.DefaultFormats
 import org.json4s.jackson.JsonMethods._
 import play.api.Logger
 import util.SourceUtil
 
-import scala.io.{BufferedSource, Source}
-
 object CorpusInitializer {
 
-  def props(sparkContext: SparkContext, classifier: ActorRef) = Props(new CorpusInitializer(sparkContext, classifier))
+  def props(sparkContext: SparkContext, trainer: ActorRef) = Props(new CorpusInitializer(sparkContext, trainer))
 
   case object Init
 }
 
-class CorpusInitializer(sparkContext: SparkContext, classifier: ActorRef) extends Actor {
+class CorpusInitializer(sparkContext: SparkContext, trainer: ActorRef) extends Actor {
 
   val log = Logger(this.getClass)
 
@@ -42,14 +40,14 @@ class CorpusInitializer(sparkContext: SparkContext, classifier: ActorRef) extend
             case Some(bufferedSource) =>
               val tweet = parse(bufferedSource.mkString)
               val tweetText = if ((tweet \ "user" \ "lang").extract[String] == "en") (tweet \ "text").extract[String] else ""
-              CorpusItem(label, tweetText)
-            case _ => CorpusItem(label, "")
+              LabeledTweet(tweetText, label)
+            case _ => LabeledTweet("", label)
           }
         }
       }
       .filter(_.tweet != "")
 
-      classifier ! Train(corpus)
+      trainer ! ValidateOn(corpus)
 
       context.stop(self)
     }

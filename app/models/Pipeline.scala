@@ -1,6 +1,6 @@
 package models
 
-import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.{Pipeline => SparkMlPipeline}
 import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.feature.{Word2Vec, StringIndexer, Tokenizer}
 import twitter.LinguisticTransformer
@@ -44,6 +44,6 @@ object Pipeline {
    */
   val estimator = new LogisticRegression()
 
-  def create: Pipeline = new Pipeline().setStages(Array(indexer, linguisticTransformer, tokenizer, word2Vec, estimator))
+  def create: SparkMlPipeline = new SparkMlPipeline().setStages(Array(indexer, linguisticTransformer, tokenizer, word2Vec, estimator))
 
 }
