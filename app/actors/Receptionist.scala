@@ -16,9 +16,10 @@ class Receptionist(sparkContext: SparkContext) extends Actor {
   val log = Logger(this.getClass)
 
   val twitterHandler = context.actorOf(TwitterHandler.props(sparkContext), "twitter-handler")
-  val classifier = context.actorOf(Classifier.props(sparkContext, twitterHandler), "classifier")
-  val trainer = context.actorOf(Trainer.props(sparkContext, classifier, twitterHandler), "trainer")
-  val corpusInitializer = context.actorOf(CorpusInitializer.props(sparkContext, trainer), "corpus-initializer")
+  val onlineTrainer = context.actorOf(OnlineTrainer.props(sparkContext), "online-trainer")
+  val classifier = context.actorOf(Classifier.props(sparkContext, twitterHandler, onlineTrainer), "classifier")
+  //  val trainer = context.actorOf(Trainer.props(sparkContext, classifier, twitterHandler), "trainer")
+  val corpusInitializer = context.actorOf(CorpusInitializer.props(sparkContext, onlineTrainer), "corpus-initializer")
 
   override def receive = {
 
@@ -28,4 +29,5 @@ class Receptionist(sparkContext: SparkContext) extends Actor {
     }
     case undefined => log.info(s"Unexpected message $undefined")
   }
+
 }

@@ -8,6 +8,7 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
 import models.LabeledTweet
 import org.apache.spark.SparkContext
+import org.apache.spark.rdd.RDD
 import play.api.libs.json.{Json, JsPath, Writes}
 import play.api.mvc.{Action, Controller}
 import akka.pattern._

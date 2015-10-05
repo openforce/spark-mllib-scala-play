@@ -43,8 +43,8 @@ class Trainer(sparkContext: SparkContext, classifier: ActorRef, twitterHandler: 
       log.info(s"Start batch training")
 
       val data: DataFrame = batch
-      .toDF
-      .filter("sentiment in ('positive', 'negative')")
+        .toDF
+        .filter("sentiment in ('positive', 'negative')")
 
       val splits = data.randomSplit(Array(0.7, 0.3), 42)
       val train = splits(0)
@@ -71,10 +71,6 @@ class Trainer(sparkContext: SparkContext, classifier: ActorRef, twitterHandler: 
       log.info(s"precision: ${precision}")
 
       classifier ! UpdateModel(model)
-
-    case TrainOnline(stream: DStream[LabeledTweet]) =>
-
-      log.info(s"Start online training")
 
   }
 
