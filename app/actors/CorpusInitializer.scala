@@ -1,7 +1,7 @@
 package actors
 
 import actors.CorpusInitializer.Init
-import actors.Trainer.ValidateOn
+import actors.OnlineTrainer.ValidateOn
 import akka.actor.{Actor, ActorRef, Props}
 import models.LabeledTweet
 import org.apache.spark.SparkContext

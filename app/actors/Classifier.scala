@@ -48,6 +48,7 @@ class Classifier(sparkContext: SparkContext, twitterHandler: ActorRef, onlineTra
         model <- (onlineTrainer ? GetLatestModel).mapTo[LogisticRegressionModel]
       } yield {
         val rdd: RDD[String] = sparkContext.parallelize(fetchResult.tweets)
+        rdd.cache()
         val features = rdd map { t =>
           val tokens = t.split("\\W+")
           new HashingTF(100).transform(tokens)
