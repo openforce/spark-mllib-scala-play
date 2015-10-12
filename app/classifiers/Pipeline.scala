@@ -1,4 +1,4 @@
-package models
+package classifiers
 
 import org.apache.spark.ml.{Pipeline => SparkMlPipeline}
 import org.apache.spark.ml.classification.LogisticRegression

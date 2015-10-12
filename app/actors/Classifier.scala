@@ -6,7 +6,6 @@ import actors.TwitterHandler.{Fetch, FetchResult}
 import akka.actor.{Actor, ActorRef, Props}
 import akka.pattern._
 import akka.util.Timeout
-import models.LabeledTweet
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.PipelineModel
 import org.apache.spark.mllib.classification.LogisticRegressionModel
@@ -15,6 +14,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
 import play.api.Logger
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import twitter.LabeledTweet
 
 import scala.concurrent.duration._
 

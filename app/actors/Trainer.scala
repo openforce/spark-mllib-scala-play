@@ -3,12 +3,13 @@ package actors
 import actors.Classifier.UpdateModel
 import actors.Trainer.{TrainBatch, TrainOnline, ValidateOn}
 import akka.actor.{Actor, ActorRef, Props}
-import models.{LabeledTweet, Pipeline}
+import classifiers.Pipeline
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 import org.apache.spark.streaming.dstream.DStream
 import play.api.Logger
+import twitter.LabeledTweet
 
 object Trainer {
 
