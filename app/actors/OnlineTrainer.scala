@@ -5,7 +5,7 @@ import akka.actor.{Actor, ActorRef, Props}
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.classification.{LogisticRegressionModel, StreamingLogisticRegressionWithSGD}
 import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
-import org.apache.spark.mllib.feature.HashingTF
+import org.apache.spark.mllib.feature.{Normalizer, StandardScaler, HashingTF}
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
@@ -15,9 +15,15 @@ import play.api.Logger
 import twitter.{Tweet, LabeledTweet}
 import twitter4j.auth.OAuthAuthorization
 
+import scala.util.Random
+
 object OnlineTrainer {
 
-  implicit val hashingTf = new HashingTF(100)
+  val smileys = Seq(":)", ":(")
+
+  val coefficients = 100
+
+  implicit val hashingTf = new HashingTF(coefficients)
 
   def props(sparkContext: SparkContext) = Props(new OnlineTrainer(sparkContext))
 
@@ -35,13 +41,9 @@ class OnlineTrainer(sparkContext: SparkContext) extends Actor {
 
   val log = Logger(this.getClass)
 
-  val smileys = Seq(":)", ":(")
-
   val ssc = new StreamingContext(sparkContext, Duration(1000))
 
   val twitterAuth = Some(new OAuthAuthorization(TwitterHandler.config))
-
-  val coefficients = 100
 
   var model: StreamingLogisticRegressionWithSGD = _
 
@@ -53,9 +55,11 @@ class OnlineTrainer(sparkContext: SparkContext) extends Actor {
 
     case Init =>
       log.debug("Init online trainer")
-      val stream = TwitterUtils.createStream(ssc, twitterAuth, filters = smileys).filter(t => t.getUser.getLang == "en" && !t.isRetweet).map { Tweet(_).toLabeledPoint }
+      val stream = TwitterUtils.createStream(ssc, twitterAuth, filters = smileys)
+        .filter(t => t.getUser.getLang == "en" && !t.isRetweet)
+        .map { Tweet(_).toLabeledPoint }
       model = new StreamingLogisticRegressionWithSGD()
-        .setInitialWeights(Vectors.zeros(coefficients))
+        .setInitialWeights(Vectors.dense(Array.tabulate(coefficients)(_ => Random.nextDouble())))
       model.trainOn(stream)
       ssc.start()
 

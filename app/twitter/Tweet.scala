@@ -3,11 +3,14 @@ package twitter
 import org.apache.spark.mllib.feature.HashingTF
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.mllib.regression.LabeledPoint
+import play.api.Logger
 import twitter4j.Status
 
 case class LabeledTweet(tweet: String, sentiment: String)
 
 abstract class Tweet extends Serializable with Transformable {
+
+  val log = Logger(this.getClass)
 
   final val positive = ":)"
   final val negative = ":("
@@ -16,7 +19,11 @@ abstract class Tweet extends Serializable with Transformable {
 
   def sentiment: Double
 
-  def features(implicit hashingTF: HashingTF): Vector = hashingTF.transform(unigramsAndBigrams(text))
+  def features(implicit hashingTF: HashingTF): Vector = {
+    val tokens: Set[String] = unigramsAndBigrams(text)
+    log.debug(s"raw: $text\n\nunigramsAndBigrams: $tokens")
+    hashingTF.transform(tokens)
+  }
 
   def toLabeledPoint(implicit hashingTF: HashingTF): LabeledPoint = LabeledPoint(sentiment, features)
 
