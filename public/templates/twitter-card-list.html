@@ -4,10 +4,6 @@
             <div class="paper-card-container"> <!-- fix for velocity (doesn't work with custom element paper-card) -->
                 <paper-card class$="{{sentiment(item.sentiment)}}">
                     <div class="card-content">{{item.tweet}}</div>
-                    <div class="card-actions">
-                        <paper-icon-button icon="thumb-down" class="negative"></paper-icon-button>
-                        <paper-icon-button icon="thumb-up" class="positive"></paper-icon-button>
-                    </div>
                 </paper-card>
             </div>
         </template>
