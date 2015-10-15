@@ -1,13 +1,13 @@
 package actors
 
 import actors.CorpusInitializer.Init
-import actors.OnlineTrainer.ValidateOn
+import actors.OnlineTrainer.Train
 import akka.actor.{Actor, ActorRef, Props}
 import org.apache.spark.SparkContext
 import org.json4s.DefaultFormats
 import org.json4s.jackson.JsonMethods._
 import play.api.Logger
-import twitter.LabeledTweet
+import twitter.{Tweet, LabeledTweet}
 import util.SourceUtil
 
 object CorpusInitializer {
@@ -40,14 +40,14 @@ class CorpusInitializer(sparkContext: SparkContext, trainer: ActorRef) extends A
             case Some(bufferedSource) =>
               val tweet = parse(bufferedSource.mkString)
               val tweetText = if ((tweet \ "user" \ "lang").extract[String] == "en") (tweet \ "text").extract[String] else ""
-              LabeledTweet(tweetText, label)
-            case _ => LabeledTweet("", label)
+              Tweet(tweetText, if (label == "positive") 1.0 else 0.0)
+            case _ => Tweet("", if (label == "positive") 1.0 else 0.0)
           }
         }
       }
-      .filter(_.tweet != "")
+      .filter(_.text != "")
 
-      trainer ! ValidateOn(corpus)
+      trainer ! Train(corpus)
 
       context.stop(self)
     }

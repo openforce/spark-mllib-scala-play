@@ -20,12 +20,16 @@ abstract class Tweet extends Serializable with Transformable {
   def sentiment: Double
 
   def features(implicit hashingTF: HashingTF): Vector = {
-    val tokens: Set[String] = unigramsAndBigrams(text)
-    log.debug(s"raw: $text\n\nunigramsAndBigrams: $tokens")
-    hashingTF.transform(tokens)
+    val tks: Set[String] = tokens
+    log.debug(s"raw: $text\n\nunigramsAndBigrams: $tks")
+    hashingTF.transform(tks)
   }
 
+  def tokens = unigramsAndBigrams(text)
+
   def toLabeledPoint(implicit hashingTF: HashingTF): LabeledPoint = LabeledPoint(sentiment, features)
+
+  def toLabeledPoint(f: String => Vector): LabeledPoint = LabeledPoint(sentiment, f(text))
 
 }
 

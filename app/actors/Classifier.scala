@@ -1,7 +1,7 @@
 package actors
 
 import actors.Classifier._
-import actors.OnlineTrainer.GetLatestModel
+import actors.OnlineTrainer.{GetFeatures, GetLatestModel}
 import actors.TwitterHandler.{Fetch, FetchResult}
 import akka.actor.{Actor, ActorRef, Props}
 import akka.pattern._
@@ -9,12 +9,13 @@ import akka.util.Timeout
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.PipelineModel
 import org.apache.spark.mllib.classification.LogisticRegressionModel
-import org.apache.spark.mllib.feature.HashingTF
+import org.apache.spark.mllib.feature.{Word2VecModel, HashingTF}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
 import play.api.Logger
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import twitter.LabeledTweet
+import org.apache.spark.mllib.linalg.Vector
 
 import scala.concurrent.duration._
 
@@ -45,15 +46,10 @@ class Classifier(sparkContext: SparkContext, twitterHandler: ActorRef, onlineTra
       val client = sender
       for {
         fetchResult <- (twitterHandler ? Fetch(token)).mapTo[FetchResult]
+        (rawData, features) <- (onlineTrainer ? GetFeatures(fetchResult)).mapTo[(RDD[String], RDD[Vector])]
         model <- (onlineTrainer ? GetLatestModel).mapTo[LogisticRegressionModel]
       } yield {
-        val rdd: RDD[String] = sparkContext.parallelize(fetchResult.tweets)
-        rdd.cache()
-        val features = rdd map { t =>
-          val tokens = t.split("\\W+")
-          new HashingTF(100).transform(tokens)
-        }
-        val results = model.predict(features).zip(rdd).map { case (sentiment, tweet) =>
+        val results = model.predict(features).zip(rawData).map { case (sentiment, tweet) =>
           LabeledTweet(tweet, sentiment.toString)
         }.collect()
         client ! results
