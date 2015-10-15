@@ -1,13 +1,13 @@
 package actors
 
 import actors.CorpusInitializer.Init
-import actors.Trainer.ValidateOn
+import actors.OnlineTrainer.ValidateOn
 import akka.actor.{Actor, ActorRef, Props}
-import models.LabeledTweet
 import org.apache.spark.SparkContext
 import org.json4s.DefaultFormats
 import org.json4s.jackson.JsonMethods._
 import play.api.Logger
+import twitter.LabeledTweet
 import util.SourceUtil
 
 object CorpusInitializer {

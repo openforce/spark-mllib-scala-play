@@ -1,23 +1,26 @@
 package actors
 
 import actors.Classifier._
+import actors.OnlineTrainer.GetLatestModel
 import actors.TwitterHandler.{Fetch, FetchResult}
-import actors.TwitterHandlerCoordinator.FetchFor
 import akka.actor.{Actor, ActorRef, Props}
 import akka.pattern._
 import akka.util.Timeout
-import models.LabeledTweet
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.PipelineModel
+import org.apache.spark.mllib.classification.LogisticRegressionModel
+import org.apache.spark.mllib.feature.HashingTF
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Row, SQLContext}
+import org.apache.spark.sql.SQLContext
 import play.api.Logger
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import twitter.LabeledTweet
+
 import scala.concurrent.duration._
 
 object Classifier {
 
-  def props(sparkContext: SparkContext, twitterHandler: ActorRef) = Props(new Classifier(sparkContext, twitterHandler))
+  def props(sparkContext: SparkContext, twitterHandler: ActorRef, onlineTrainer: ActorRef) = Props(new Classifier(sparkContext, twitterHandler, onlineTrainer))
 
   case class Classify(token: String)
 
@@ -25,13 +28,11 @@ object Classifier {
 
 }
 
-class Classifier(sparkContext: SparkContext, twitterHandler: ActorRef) extends Actor {
+class Classifier(sparkContext: SparkContext, twitterHandler: ActorRef, onlineTrainer: ActorRef) extends Actor {
 
   val log = Logger(this.getClass)
 
   val sqlContext = new SQLContext(sparkContext)
-
-  import sqlContext.implicits._
 
   implicit val timeout = Timeout(5.seconds)
 
@@ -42,21 +43,21 @@ class Classifier(sparkContext: SparkContext, twitterHandler: ActorRef) extends A
     case Classify(token: String) =>
       log.info(s"Start classifying tweets for token '$token'")
       val client = sender
-      (twitterHandler ? Fetch(token)).mapTo[FetchResult] map { fr =>
-        val results = pipelineModel
-          .transform(sparkContext.parallelize(fr.tweets.map(t => LabeledTweet(t, ""))).toDF())
-          .select("tweet", "prediction")
-          .collect()
-          .map { case Row(tweet: String, prediction: Double) =>
-            LabeledTweet(tweet, prediction.toString)
-          }
+      for {
+        fetchResult <- (twitterHandler ? Fetch(token)).mapTo[FetchResult]
+        model <- (onlineTrainer ? GetLatestModel).mapTo[LogisticRegressionModel]
+      } yield {
+        val rdd: RDD[String] = sparkContext.parallelize(fetchResult.tweets)
+        rdd.cache()
+        val features = rdd map { t =>
+          val tokens = t.split("\\W+")
+          new HashingTF(100).transform(tokens)
+        }
+        val results = model.predict(features).zip(rdd).map { case (sentiment, tweet) =>
+          LabeledTweet(tweet, sentiment.toString)
+        }.collect()
         client ! results
       }
-
-    case UpdateModel(model: PipelineModel) =>
-      log.info("Updating model")
-      pipelineModel = model
-
   }
 
 }
