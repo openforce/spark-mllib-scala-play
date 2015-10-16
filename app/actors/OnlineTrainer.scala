@@ -74,11 +74,11 @@ class OnlineTrainer(sparkContext: SparkContext) extends Actor {
     val scoreAndLabels = corpus map { tweet => (model.predict(tfidf(tweet.tokens)), tweet.sentiment) }
     val total: Double = scoreAndLabels.count()
     val metrics = new BinaryClassificationMetrics(scoreAndLabels)
-    println(s"Current model: ${model.toString()}")
-    println(s"Area under the ROC curve: ${metrics.areaUnderROC()}")
+    log.info(s"Current model: ${model.toString()}")
+    log.info(s"Area under the ROC curve: ${metrics.areaUnderROC()}")
     val correct: Double = scoreAndLabels.filter { case ((score, label)) => score == label }.count()
     val accuracy = correct / total
-    println(s"Accuracy: $accuracy ($correct of $total)")
+    log.info(s"Accuracy: $accuracy ($correct of $total)")
   }
 
 }

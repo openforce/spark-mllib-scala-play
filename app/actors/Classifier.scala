@@ -9,13 +9,12 @@ import akka.util.Timeout
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.PipelineModel
 import org.apache.spark.mllib.classification.LogisticRegressionModel
-import org.apache.spark.mllib.feature.{Word2VecModel, HashingTF}
+import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
 import play.api.Logger
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import twitter.LabeledTweet
-import org.apache.spark.mllib.linalg.Vector
 
 import scala.concurrent.duration._
 
