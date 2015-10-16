@@ -1,19 +1,20 @@
 package controllers
 
 import javax.inject._
+
 import actors.Classifier._
 import actors.Receptionist
 import actors.Receptionist.GetClassifier
 import akka.actor.{ActorRef, ActorSystem}
+import akka.pattern._
 import akka.util.Timeout
 import org.apache.spark.SparkContext
-import org.apache.spark.rdd.RDD
-import play.api.libs.json.{Json, JsPath, Writes}
-import play.api.mvc.{Action, Controller}
-import akka.pattern._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import play.api.libs.json.Json
+import play.api.mvc.{Action, Controller}
 import play.api.routing.JavaScriptReverseRouter
 import twitter.LabeledTweet
+
 import scala.concurrent.duration._
 
 @Singleton
