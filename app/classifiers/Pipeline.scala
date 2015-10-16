@@ -1,8 +1,9 @@
-package models
+package classifiers
 
 import org.apache.spark.ml.{Pipeline => SparkMlPipeline}
 import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.feature.{Word2Vec, StringIndexer, Tokenizer}
+import org.apache.spark.mllib.classification.LogisticRegressionWithSGD
 import twitter.LinguisticTransformer
 
 object Pipeline {

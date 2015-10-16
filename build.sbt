@@ -8,7 +8,7 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 
 scalaVersion := "2.11.7"
 
-val sparkVersion = "1.5.0"
+val sparkVersion = "1.5.1"
 
 // Needed as SBT's classloader doesn't work well with Spark
 fork := true
@@ -37,7 +37,6 @@ libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-mllib" % sparkVersion,
   "org.apache.spark" %% "spark-streaming" % sparkVersion,
   "org.apache.spark" %% "spark-streaming-twitter" % sparkVersion,
-  "org.twitter4j" % "twitter4j-core" % "4.0.4",
   "org.jblas" % "jblas" % "1.2.4"
 )
 
