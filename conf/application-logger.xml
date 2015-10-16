@@ -24,7 +24,7 @@
     <logger name="actors" level="DEBUG" />
     <logger name="twitter" level="DEBUG" />
 
-    <logger name="org.apache.spark" level="WARN">
+    <logger name="org.apache.spark" level="ERROR">
         <appender ref="STDOUT" />
     </logger>
 
@@ -33,6 +33,10 @@
     </logger>
 
     <logger name="breeze.optimize" level="WARN">
+        <appender ref="STDOUT" />
+    </logger>
+
+    <logger name="twitter.Tweet" level="WARN">
         <appender ref="STDOUT" />
     </logger>
 

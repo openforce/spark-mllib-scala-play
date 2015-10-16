@@ -1,18 +1,6 @@
 package twitter
 
-import org.apache.spark.ml.UnaryTransformer
-import org.apache.spark.ml.util.Identifiable
-import org.apache.spark.sql.types.{StringType, DataType}
-
-class LinguisticTransformer(override val uid: String) extends UnaryTransformer[String, String, LinguisticTransformer] {
-
-  def this() = this(Identifiable.randomUID("linguisticTransformer"))
-
-  override protected def createTransformFunc: String => String = transform
-
-  override protected def validateInputType(inputType: DataType): Unit = require(inputType == StringType, s"Input type must be StringType but got $inputType.")
-
-  override protected def outputDataType: DataType = StringType
+trait Transformable extends Serializable {
 
   private final val emoRepl = Map(
     // positive emoticons
@@ -51,11 +39,33 @@ class LinguisticTransformer(override val uid: String) extends UnaryTransformer[S
     "\bcannot\b".r -> "can not"
   )
 
-  def transform(text: String): String = {
+  def transformSentence(text: String): String = {
     var t = text.toLowerCase
     for ((emo, repl) <- emoRepl) t = t.replace(emo, repl)
     for ((regex, repl) <- reRepl) t = regex.replaceAllIn(t, repl)
     t.replace("-", " ").replace("_", " ")
   }
+
+  def shortenDuplicateChars(word: String): String = word.replaceAll("([a-z])\\1\\1+", "$1$1")
+
+  def username(word: String): String = word.replaceAll("@\\S+", "USERNAME")
+
+  def url(word: String): String = word.replaceAll("http:\\/\\/\\S+", "URL")
+
+  def tokenizeSentence(sentence: String): Seq[String] =
+    transformSentence(sentence)
+      .split(" ")
+      .map(_.toLowerCase)
+      .map(shortenDuplicateChars)
+      .map(username)
+      .map(url)
+      .map(_.replaceAll("""\W+""", "")).toSeq
+
+  def unigramsAndBigrams(text: String): Set[String] =
+    (tokenizeSentence(text) ++ // unigrams
+      text // bigrams
+        .split("\\.")
+        .map { s => tokenizeSentence(s).sliding(2) }
+        .flatMap(identity).map(_.mkString(" "))).toSet
 
 }
