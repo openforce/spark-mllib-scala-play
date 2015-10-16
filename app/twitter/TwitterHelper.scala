@@ -24,7 +24,7 @@ object TwitterHelper {
     val twitter = twitterFactory.getInstance()
     val query = new Query(s"$keyword -filter:retweets").lang("en")
     val result = twitter.search(query)
-    result.getTweets.take(1000).map(_.getText()).toList
+    result.getTweets.take(100).map(_.getText()).toList
   }
 
   def stream(token: String, sparkContext: SparkContext, twitterConfig: Configuration): DStream[String] = {
