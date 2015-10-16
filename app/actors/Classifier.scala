@@ -46,11 +46,11 @@ class Classifier(sparkContext: SparkContext, twitterHandler: ActorRef, onlineTra
       val client = sender
       for {
         fetchResult <- (twitterHandler ? Fetch(token)).mapTo[FetchResult]
-        (rawData, features) <- (onlineTrainer ? GetFeatures(fetchResult)).mapTo[(RDD[String], RDD[Vector])]
+        features <- (onlineTrainer ? GetFeatures(fetchResult)).mapTo[RDD[(String, Vector)]]
         model <- (onlineTrainer ? GetLatestModel).mapTo[LogisticRegressionModel]
       } yield {
-        val results = model.predict(features).zip(rawData).map { case (sentiment, tweet) =>
-          LabeledTweet(tweet, sentiment.toString)
+        val results = features.map { case (tweet, vector) =>
+          LabeledTweet(tweet, model.predict(vector).toString)
         }.collect()
         client ! results
       }

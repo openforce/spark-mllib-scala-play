@@ -2,6 +2,7 @@ package actors
 
 import actors.TwitterHandler.FetchResult
 import akka.actor.{Actor, Props}
+import features.TfIdf
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.classification.{LogisticRegressionModel, StreamingLogisticRegressionWithSGD}
 import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
@@ -15,11 +16,7 @@ import twitter.Tweet
 import twitter4j.auth.OAuthAuthorization
 import util.SentimentIdentifier
 
-object OnlineTrainer {
-
-  val coefficients = 100
-
-  implicit val hashingTf = new HashingTF(coefficients)
+object OnlineTrainer extends TfIdf {
 
   def props(sparkContext: SparkContext) = Props(new OnlineTrainer(sparkContext))
 
@@ -29,15 +26,9 @@ object OnlineTrainer {
 
   case class GetFeatures(fetchResult: FetchResult)
 
-  var lrModel: StreamingLogisticRegressionWithSGD = _
-
-  var word2Vec: Word2VecModel = _
-
-  var idf: IDFModel = _
+  var logisticRegression: StreamingLogisticRegressionWithSGD = _
 
   var corpus: RDD[Tweet] = _
-
-  private def tfIdf(text: Set[String]) = idf.transform(hashingTf.transform(text))
 
 }
 
@@ -56,38 +47,31 @@ class OnlineTrainer(sparkContext: SparkContext) extends Actor {
     case Train(tweets) =>
       log.info(s"Received corpus with ${tweets.size} tweets to train")
       corpus = sparkContext.makeRDD(tweets)
-      lrModel = new StreamingLogisticRegressionWithSGD()
+      train(corpus)
+      logisticRegression = new StreamingLogisticRegressionWithSGD()
         .setInitialWeights(Vectors.zeros(coefficients))
-      word2Vec = new Word2Vec()
-        .fit(corpus.map(_.tokens))
       val stream = TwitterUtils.createStream(ssc, twitterAuth, filters = SentimentIdentifier.sentimentEmoticons)
         .filter(t => t.getUser.getLang == "en" && !t.isRetweet)
         .map { Tweet(_) }
-        .map(tweet => tweet.toLabeledPoint { _ => tfIdf(tweet.tokens)})
-
-      val tf = hashingTf.transform(corpus.map(_.tokens))
-      tf.cache()
-      idf = new IDF().fit(tf)
-      lrModel.trainOn(stream)
+        .map(tweet => tweet.toLabeledPoint { _ => tfidf(tweet.tokens)})
+      logisticRegression.trainOn(stream)
       ssc.start()
 
     case GetFeatures(fetchResult) =>
       val rdd: RDD[String] = sparkContext.parallelize(fetchResult.tweets)
       rdd.cache()
-      val features = rdd map { t => tfIdf(Tweet(t).tokens) }
-      sender ! (rdd, features)
+      val features = rdd map { t => (t, tfidf(Tweet(t).tokens)) }
+      sender ! features
 
     case GetLatestModel =>
-      val lr = lrModel.latestModel()
+      val lr = logisticRegression.latestModel()
       sender ! lr
       testOn(lr)
 
   }
 
   private def testOn(model: LogisticRegressionModel): Unit = {
-    val scoreAndLabels = corpus map { tweet =>
-      (model.predict(tfIdf(tweet.tokens)), tweet.sentiment)
-    }
+    val scoreAndLabels = corpus map { tweet => (model.predict(tfidf(tweet.tokens)), tweet.sentiment) }
     val total: Double = scoreAndLabels.count()
     val metrics = new BinaryClassificationMetrics(scoreAndLabels)
     println(s"Current model: ${model.toString()}")
@@ -96,4 +80,5 @@ class OnlineTrainer(sparkContext: SparkContext) extends Actor {
     val accuracy = correct / total
     println(s"Accuracy: $accuracy ($correct of $total)")
   }
+
 }
