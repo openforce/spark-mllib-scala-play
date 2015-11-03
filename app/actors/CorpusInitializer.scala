@@ -9,7 +9,7 @@ import org.apache.spark.streaming.{Duration, StreamingContext}
 import play.api.Logger
 import twitter.Tweet
 import twitter4j.auth.OAuthAuthorization
-import util.SentimentIdentifier
+import util.SentimentIdentifier._
 
 object CorpusInitializer {
 
@@ -28,11 +28,10 @@ class CorpusInitializer(sparkContext: SparkContext, trainer: ActorRef) extends A
 
   val twitterAuth = Some(new OAuthAuthorization(TwitterHandler.config))
 
-  var counter = 0L
+  var posTweets: Seq[Tweet] = Nil
+  var negTweets: Seq[Tweet] = Nil
 
-  var tweets: Seq[Tweet] = Nil
-
-  val maxTweets = 500
+  val totalTweetSize = 500
 
   var stop = false
 
@@ -43,7 +42,7 @@ class CorpusInitializer(sparkContext: SparkContext, trainer: ActorRef) extends A
     case Finish => {
       log.info(s"Terminating stream...")
       ssc.stop(false, true)
-      trainer ! Train(tweets)
+      trainer ! Train(posTweets ++ negTweets)
       context.stop(self)
     }
 
@@ -51,20 +50,22 @@ class CorpusInitializer(sparkContext: SparkContext, trainer: ActorRef) extends A
 
       log.info(s"Initialize tweets corpus")
 
-      val stream = TwitterUtils.createStream(ssc, twitterAuth, filters = SentimentIdentifier.sentimentEmoticons)
+      val stream = TwitterUtils.createStream(ssc, twitterAuth, filters = sentimentEmoticons)
         .filter(t => t.getUser.getLang == "en" && !t.isRetweet)
         .map(Tweet(_))
 
       stream.foreachRDD { rdd =>
         val newTweets = rdd.collect()
         if(!newTweets.isEmpty) {
-          println(s"*** Collected tweets $counter of $maxTweets")
+          println(s"*** Collected ${posTweets.size} positive tweets and ${negTweets.size} negative tweets of total max tweets $totalTweetSize")
           println(newTweets.foreach(println))
         }
-        tweets = tweets ++ newTweets
-        counter = counter + rdd.count()
+        val (pos, neg) = newTweets.partition(isPositive)
 
-        if(counter >= maxTweets && !stop) {
+        if(!reachedMax(posTweets)) posTweets = posTweets ++ pos
+        if(!reachedMax(negTweets)) negTweets = negTweets ++ neg
+
+        if(reachedMax(posTweets) && reachedMax(negTweets) && !stop) {
           stop = true
           self ! Finish
         }
@@ -73,4 +74,6 @@ class CorpusInitializer(sparkContext: SparkContext, trainer: ActorRef) extends A
       ssc.start()
     }
   }
+
+  def reachedMax(s: Seq[Tweet]) = s.size >= totalTweetSize / 2
 }
