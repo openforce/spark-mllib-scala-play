@@ -6,6 +6,9 @@
             The keyword you enter will be used to search twitter for tweets.
             The found tweets will be fed into our evaluation engine and the engine will automatically decide the sentiment for each tweet.
         </p>
+        <paper-toast id="event-toast"></paper-toast>
+        <!--<event-log></event-log>-->
+        <ws-element url="ws://localhost:9000/socket"></ws-element>
         <div class="paper-input">
             <paper-input label="Keyword" autofocus>
                 <paper-icon-button suffix icon="search" id="start-predicting"></paper-icon-button>

@@ -1,24 +1,24 @@
 package actors
 
 import actors.Receptionist.GetClassifier
-import akka.actor.{Props, Actor}
+import akka.actor.{ActorRef, Props, Actor}
 import org.apache.spark.SparkContext
 import play.api.Logger
 
 object Receptionist {
-  def props(sparkContext: SparkContext) = Props(new Receptionist(sparkContext))
+  def props(sparkContext: SparkContext, eventServer: ActorRef) = Props(new Receptionist(sparkContext, eventServer))
 
   case object GetClassifier
 }
 
-class Receptionist(sparkContext: SparkContext) extends Actor {
+class Receptionist(sparkContext: SparkContext, eventServer: ActorRef) extends Actor {
 
   val log = Logger(this.getClass)
 
   val twitterHandler = context.actorOf(TwitterHandler.props(sparkContext), "twitter-handler")
   val onlineTrainer = context.actorOf(OnlineTrainer.props(sparkContext), "online-trainer")
   val classifier = context.actorOf(Classifier.props(sparkContext, twitterHandler, onlineTrainer), "classifier")
-  val corpusInitializer = context.actorOf(CorpusInitializer.props(sparkContext, onlineTrainer), "corpus-initializer")
+  val corpusInitializer = context.actorOf(CorpusInitializer.props(sparkContext, onlineTrainer, eventServer), "corpus-initializer")
 
   override def receive = {
 

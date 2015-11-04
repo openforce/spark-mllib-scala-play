@@ -13,14 +13,14 @@ import util.SentimentIdentifier._
 
 object CorpusInitializer {
 
-  def props(sparkContext: SparkContext, trainer: ActorRef) = Props(new CorpusInitializer(sparkContext, trainer))
+  def props(sparkContext: SparkContext, trainer: ActorRef, eventServer: ActorRef) = Props(new CorpusInitializer(sparkContext, trainer, eventServer))
 
   case object Init
 
   case object Finish
 }
 
-class CorpusInitializer(sparkContext: SparkContext, trainer: ActorRef) extends Actor {
+class CorpusInitializer(sparkContext: SparkContext, trainer: ActorRef, eventServer: ActorRef) extends Actor {
 
   val log = Logger(this.getClass)
 
@@ -34,6 +34,8 @@ class CorpusInitializer(sparkContext: SparkContext, trainer: ActorRef) extends A
   val totalTweetSize = 500
 
   var stop = false
+
+  var feedbackListeners = Seq.empty[ActorRef]
 
   self ! Init
 
@@ -56,10 +58,6 @@ class CorpusInitializer(sparkContext: SparkContext, trainer: ActorRef) extends A
 
       stream.foreachRDD { rdd =>
         val newTweets = rdd.collect()
-        if(!newTweets.isEmpty) {
-          println(s"*** Collected ${posTweets.size} positive tweets and ${negTweets.size} negative tweets of total max tweets $totalTweetSize")
-          println(newTweets.foreach(println))
-        }
         val (pos, neg) = newTweets.partition(isPositive)
 
         if(!reachedMax(posTweets)) posTweets = posTweets ++ pos
@@ -68,6 +66,11 @@ class CorpusInitializer(sparkContext: SparkContext, trainer: ActorRef) extends A
         if(reachedMax(posTweets) && reachedMax(negTweets) && !stop) {
           stop = true
           self ! Finish
+        } else {
+          val msg = s"Collected ${posTweets.size} positive tweets and ${negTweets.size} negative tweets of total $totalTweetSize"
+          println(s"*** $msg")
+          println(newTweets.foreach(println))
+          eventServer ! msg
         }
       }
 

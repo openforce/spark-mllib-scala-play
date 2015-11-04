@@ -7,6 +7,8 @@
 GET        /                           @controllers.Application.index
 GET        /classify                   @controllers.Application.classify(keyword: String)
 
+GET        /socket                     @controllers.Application.socket
+
 # Javascript Routes
 GET        /jsRoutes                   @controllers.Application.jsRoutes
 

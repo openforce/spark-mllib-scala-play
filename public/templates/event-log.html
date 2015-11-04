@@ -1,0 +1,15 @@
+<dom-module id="event-log">
+    <template>
+      <template is="dom-repeat" items="{{elements}}">
+          <div>{{item}}</div>
+        </template>
+    </template>
+    <script>
+        Polymer({
+            is: 'event-log',
+            ready: function() {
+                this.elements = ["Starting..."];
+            }
+        });
+    </script>
+</dom-module>

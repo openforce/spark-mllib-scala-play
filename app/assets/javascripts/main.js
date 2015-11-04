@@ -32,6 +32,24 @@
         var searchBox = document.querySelector('paper-input');
         var container = document.querySelector('#mainContainer');
 
+//        var eventLog = document.querySelector('event-log');
+        var eventToast = document.querySelector('#event-toast');
+        var wsElement = document.querySelector("ws-element");
+        wsElement.addEventListener('onerror', function (error){
+            throw new Error(error);
+        });
+        wsElement.addEventListener('onopen', function () {
+            wsElement.send('Hello from client');
+        });
+        wsElement.addEventListener('onmessage', function (message) {
+            // hello from the server
+            console.log(message.detail);
+//            eventLog.push('elements', message.detail)
+            eventToast.text = message.detail;
+            eventToast.show();
+        });
+        // -------- x-websockets echo test --------
+
         /*
          * Wire the frontend
          */
