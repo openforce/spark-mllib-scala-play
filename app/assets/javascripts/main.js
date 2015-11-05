@@ -60,8 +60,9 @@
 
             api.classify(searchBox.value)
                 .then((json) => {
-                    console.log("Search result: " + json);
+                    console.log(json);
                     json.forEach((item) => twitterCardList.push('elements', item));
+                    setTimeout(done, 1000 + Math.random() * 2000);
                 })
                 .catch((ex) => {
                   console.log(ex);
@@ -74,7 +75,6 @@
             });
 
             setTimeout(() => Velocity(progressBar, "fadeIn", { duration: 200 }));
-            setTimeout(done, 1000 + Math.random() * 2000);
         });
 
         // fade out elements
