@@ -60,11 +60,11 @@
 
             api.classify(searchBox.value)
                 .then((json) => {
-                    console.log(json);
+                    console.log("Search result: " + json);
                     json.forEach((item) => twitterCardList.push('elements', item));
                 })
                 .catch((ex) => {
-
+                  console.log(ex);
                 });
 
             Velocity(searchBox.parentNode, 'scroll', {

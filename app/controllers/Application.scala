@@ -44,10 +44,7 @@ class Application @Inject() (system: ActorSystem, sparkContext: SparkContext) ex
   }
 
   object EventListener {
-
     def props(out: ActorRef) = Props(new EventListener(out))
-
-    case object GetFeedback
   }
 
   class EventListener(out: ActorRef) extends Actor {

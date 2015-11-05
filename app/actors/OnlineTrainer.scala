@@ -22,7 +22,7 @@ object OnlineTrainer extends TfIdf {
 
   case object GetLatestModel
 
-  case class Train(corpus: Seq[Tweet])
+  case class Train(corpus: RDD[Tweet])
 
   case class GetFeatures(fetchResult: FetchResult)
 
@@ -45,8 +45,9 @@ class OnlineTrainer(sparkContext: SparkContext) extends Actor {
   override def receive = {
 
     case Train(tweets) =>
-      log.info(s"Received corpus with ${tweets.size} tweets to train")
-      corpus = sparkContext.makeRDD(tweets)
+      log.info(s"Received corpus with tweets to train")
+//      corpus = sparkContext.makeRDD(tweets)
+      corpus = tweets
       train(corpus)
       logisticRegression = new StreamingLogisticRegressionWithSGD()
         .setInitialWeights(Vectors.zeros(coefficients))
