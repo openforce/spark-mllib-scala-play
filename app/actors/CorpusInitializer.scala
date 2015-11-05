@@ -34,7 +34,7 @@ class CorpusInitializer(sparkContext: SparkContext, trainer: ActorRef, eventServ
 
   val twitterAuth = Some(new OAuthAuthorization(TwitterHandler.config))
 
-  val csvFilePath = "data/trainingandtestdata/training.1600000.processed.noemoticon.csv"
+  val csvFilePath = "data/trainingandtestdata/testdata.manual.2009.06.14.csv"
 
   var posTweets: RDD[Tweet] = sparkContext.emptyRDD[Tweet]
   var negTweets: RDD[Tweet] = sparkContext.emptyRDD[Tweet]
@@ -53,7 +53,7 @@ class CorpusInitializer(sparkContext: SparkContext, trainer: ActorRef, eventServ
   override def receive = {
 
     case Finish => {
-      log.info(s"Terminating stream...")
+      log.info(s"Terminating streaming context...")
       ssc.stop(false, true)
       val msg = s"Send ${posTweets.count} positive and ${negTweets.count} negative tweets to trainer"
       log.info(msg)
@@ -70,7 +70,7 @@ class CorpusInitializer(sparkContext: SparkContext, trainer: ActorRef, eventServ
       def parseLabel(str: String): Option[Double] = str match {
         case "\"0\"" => Some(0)
         case "\"4\"" => Some(1)
-        case x => println(s"Unparsable $x"); None
+        case x => None
       }
 
       val data = sparkContext.textFile(csvFilePath)
