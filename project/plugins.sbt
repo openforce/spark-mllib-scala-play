@@ -12,4 +12,5 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-web" % "1.1.1")
 
 // Add preprocessors
 addSbtPlugin("com.typesafe.sbt" % "sbt-less" % "1.1.0")
-addSbtPlugin("com.typesafe.sbt" % "sbt-traceur" % "1.0.0")
+
+addSbtPlugin("com.typesafe.sbt" % "sbt-traceur" % "1.0.1")
