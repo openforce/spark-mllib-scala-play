@@ -1,14 +1,20 @@
 <dom-module id="event-log">
     <template>
-      <template is="dom-repeat" items="{{elements}}">
+      <button type="button" on-click="toggle">Log</button>
+      <iron-collapse id="collapse">
+        <template is="dom-repeat" items="{{elements}}">
           <div>{{item}}</div>
         </template>
+      </iron-collapse>
     </template>
     <script>
         Polymer({
             is: 'event-log',
             ready: function() {
                 this.elements = ["Starting..."];
+            },
+            toggle: function() {
+              this.$.collapse.toggle();
             }
         });
     </script>
