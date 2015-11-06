@@ -23,7 +23,9 @@ object CorpusInitializer {
 
   case object Finish
 
-  val streamedTweetsSize = configuration.getInt("ml.corpus.streamed-tweets-size").getOrElse(500)
+  val streamedTweetsSize = configuration.getInt("ml.corpus.initialization.tweets").getOrElse(500)
+
+  val streamedCorpus = configuration.getBoolean("ml.corpus.initialization.streamed").getOrElse(true)
 
 }
 
@@ -47,10 +49,10 @@ class CorpusInitializer(sparkContext: SparkContext, trainer: ActorRef, eventServ
   var stop = false
 
   override def preStart() = {
-    if(Files.exists(Paths.get(csvFilePath)))
-      self ! Load
-    else
+    if(streamedCorpus)
       self ! Init
+    else
+      self ! Load
   }
 
   override def receive = {
