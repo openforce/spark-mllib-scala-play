@@ -8,7 +8,7 @@ GET        /                           @controllers.Application.index
 GET        /classify                   @controllers.Application.classify(keyword: String)
 
 GET        /socket                     @controllers.Application.socket
-GET        /statistics                 @controllers.Application.statisticsSocket
+GET        /statisticsSocket           @controllers.Application.statisticsSocket
 
 # Javascript Routes
 GET        /jsRoutes                   @controllers.Application.jsRoutes

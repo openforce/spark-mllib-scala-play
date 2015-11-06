@@ -35,7 +35,7 @@
         var eventToast = document.querySelector('#event-toast');
         var eventLog = document.querySelector('event-log');
 
-        new WebSocket(document.querySelector("#socket")).on("onopen", (socket) => {
+        new WebSocket("#socket").on("onopen", (socket) => {
             socket.send('Establish connection');
         }).on('onmessage', (socket, message) => {
             console.log(message.detail);
@@ -44,7 +44,9 @@
             eventToast.show();
         });
 
-        new WebSocket('#statisticsSocket').on('onmessage', (socket, message) => {
+        new WebSocket('#statisticsSocket').on('onopen', (socket) => {
+            console.log('opened connection to statistics server');
+        }).on('onmessage', (socket, message) => {
             console.log(message);
         });
 

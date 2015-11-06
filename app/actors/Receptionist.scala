@@ -1,14 +1,13 @@
 package actors
 
-import actors.OnlineTrainer.{Statistics, GetStatistics}
-import play.api.libs.json.Json
-
-import scala.concurrent.duration._
-import actors.Receptionist.GetClassifier
-import akka.actor.{ActorRef, Props, Actor}
+import akka.actor.{Actor, ActorRef, Props}
 import org.apache.spark.SparkContext
+import org.apache.spark.ml.PipelineModel
 import play.api.Logger
 import play.api.Play.{configuration, current}
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 object Receptionist {
   def props(sparkContext: SparkContext, eventServer: ActorRef, statisticsServer: ActorRef) = Props(new Receptionist(sparkContext, eventServer, statisticsServer))
@@ -32,19 +31,14 @@ class Receptionist(sparkContext: SparkContext, eventServer: ActorRef, statistics
 
   @throws[Exception](classOf[Exception])
   override def preStart(): Unit = {
-    context.system.scheduler.schedule(0 seconds, 1 seconds)(onlineTrainer ! GetStatistics)
+    context.system.scheduler.schedule(0 seconds, 1 seconds)(trainer ! GetLatestModel)
   }
 
   override def receive = {
 
-    case GetClassifier => {
-      log.info(s"Get classifier")
-      sender ! classifier
-    }
+    case GetClassifier => sender ! classifier
 
-    case s@Statistics  => {
-      statisticsServer ! Json.toJson(s)
-    }
+    case m: PipelineModel  => statisticsServer ! m
 
     case undefined => log.info(s"Unexpected message $undefined")
   }

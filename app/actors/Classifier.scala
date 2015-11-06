@@ -2,18 +2,16 @@ package actors
 
 import actors.Classifier._
 import actors.TwitterHandler.{Fetch, FetchResult}
-import akka.actor.{ActorLogging, Actor, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern._
 import akka.util.Timeout
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.PipelineModel
-import org.apache.spark.ml.classification.LogisticRegressionModel
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SQLContext}
-import play.api.Logger
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import twitter.{Tweet, LabeledTweet}
+import twitter.{LabeledTweet, Tweet}
 
 import scala.concurrent.duration._
 
@@ -65,6 +63,7 @@ class Classifier(sparkContext: SparkContext, twitterHandler: ActorRef, trainer: 
 
         client ! results
       }
+
   }
 
 }

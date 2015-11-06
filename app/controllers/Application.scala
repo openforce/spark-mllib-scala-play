@@ -3,10 +3,9 @@ package controllers
 import javax.inject._
 
 import actors.Classifier._
-import actors.EventServer.Subscribe
 import actors.Receptionist.GetClassifier
-import actors.{EventListener, StatisticsServer, EventServer, Receptionist}
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import actors.{EventListener, EventServer, Receptionist, StatisticsServer}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern._
 import akka.util.Timeout
 import org.apache.spark.SparkContext
@@ -23,7 +22,7 @@ import scala.concurrent.duration._
 class Application @Inject() (system: ActorSystem, sparkContext: SparkContext) extends Controller {
 
   val eventServer = system.actorOf(EventServer.props)
-  val statisticsServer = system.actorOf(StatisticsServer.props)
+  val statisticsServer = system.actorOf(StatisticsServer.props(sparkContext))
   val receptionist = system.actorOf(Receptionist.props(sparkContext, eventServer, statisticsServer), "receptionist")
 
   implicit val timeout = Timeout(10.minutes)

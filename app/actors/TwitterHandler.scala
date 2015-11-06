@@ -16,7 +16,7 @@ object TwitterHandler {
   def accessTokenKey = configuration.getString("twitter.access-token.key")
   def accessTokenSecret = configuration.getString("twitter.access-token.secret")
 
-  def config = {
+  def config: Configuration  = {
     val cb = new ConfigurationBuilder()
     cb.setDebugEnabled(true)
       .setOAuthConsumerKey(consumerKey.getOrElse(""))
