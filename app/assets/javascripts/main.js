@@ -34,19 +34,18 @@
 
         var eventToast = document.querySelector('#event-toast');
         var eventLog = document.querySelector('event-log');
-        var wsElement = document.querySelector("ws-element");
-        wsElement.addEventListener('onerror', function (error){
-            throw new Error(error);
-        });
-        wsElement.addEventListener('onopen', function () {
-            wsElement.send('Establish connection');
-        });
-        wsElement.addEventListener('onmessage', function (message) {
-            // hello from the server
+
+        new WebSocket(document.querySelector("#socket")).on("onopen", (socket) => {
+            socket.send('Establish connection');
+        }).on('onmessage', (socket, message) => {
             console.log(message.detail);
             eventLog.push('elements', message.detail)
             eventToast.text = message.detail;
             eventToast.show();
+        });
+
+        new WebSocket('#statisticsSocket').on('onmessage', (socket, message) => {
+            console.log(message);
         });
 
         /*
@@ -62,7 +61,7 @@
                 .then((json) => {
                     console.log(json);
                     json.forEach((item) => twitterCardList.push('elements', item));
-                    setTimeout(done, 1000 + Math.random() * 2000);
+                    setTimeout(done, 0);
                 })
                 .catch((ex) => {
                   console.log(ex);
@@ -168,6 +167,26 @@
 var Routes = {
     classify: (keyword) => jsRoutes.controllers.Application.classify(keyword).url
 };
+
+class WebSocket {
+
+    constructor(wsElement) {
+        this.wsElement = document.querySelector(wsElement);
+    }
+
+    on(eventType, f) {
+        this.wsElement.addEventListener(eventType, function(...params) {
+            f(this, ...params);
+        });
+
+        return this;
+    }
+
+    send(value) {
+        this.wsElement.send(value);
+    }
+
+}
 
 class API {
 

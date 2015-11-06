@@ -1,7 +1,7 @@
 package actors
 
 import actors.Classifier._
-import actors.OnlineTrainer.{GetFeatures, GetLatestModel}
+import actors.OnlineTrainer.{GetStatistics, GetFeatures, GetLatestModel}
 import actors.TwitterHandler.{Fetch, FetchResult}
 import akka.actor.{Actor, ActorRef, Props}
 import akka.pattern._
@@ -23,6 +23,8 @@ object Classifier {
   def props(sparkContext: SparkContext, twitterHandler: ActorRef, onlineTrainer: ActorRef) = Props(new Classifier(sparkContext, twitterHandler, onlineTrainer))
 
   case class Classify(token: String)
+
+  case object Statistics
 
   case class UpdateModel(model: PipelineModel)
 
@@ -53,6 +55,10 @@ class Classifier(sparkContext: SparkContext, twitterHandler: ActorRef, onlineTra
         }.collect()
         client ! results
       }
+
+    case Statistics => {
+      sender ! (onlineTrainer ? GetStatistics)
+    }
   }
 
 }

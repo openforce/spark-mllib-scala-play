@@ -3,20 +3,21 @@ package actors
 import actors.Messages.Subscribe
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.event.LoggingReceive
+import play.api.libs.json.{JsValue}
 
-object EventServer {
+object StatisticsServer {
 
   def props = Props[EventServer]
 
 }
 
-class EventServer extends Actor with ActorLogging {
+class StatisticsServer extends Actor with ActorLogging {
 
   var clients = Set.empty[ActorRef]
 
   def receive = LoggingReceive {
 
-    case msg: String =>
+    case msg: JsValue =>
       clients.foreach { c =>
         c ! msg
       }
