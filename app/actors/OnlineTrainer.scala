@@ -5,7 +5,7 @@ import features.TfIdf
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.classification.{LogisticRegressionModel, StreamingLogisticRegressionWithSGD}
 import org.apache.spark.mllib.evaluation.{BinaryClassificationMetrics, MulticlassMetrics}
-import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.streaming.twitter.TwitterUtils
@@ -28,6 +28,9 @@ object OnlineTrainer extends TfIdf {
 
   val dumpPath = configuration.getString("ml.corpus.path").getOrElse("")
 
+  case class OnlineTrainerModel(model: Option[LogisticRegressionModel])
+
+  case class OnlineFeatures(features: Option[RDD[(String, Vector)]])
 }
 
 class OnlineTrainer(sparkContext: SparkContext) extends Actor with ActorLogging {
@@ -61,14 +64,16 @@ class OnlineTrainer(sparkContext: SparkContext) extends Actor with ActorLogging 
       ssc.start()
 
     case GetFeatures(fetchResult) =>
+      log.info(s"Received GetFeatures message")
       val rdd: RDD[String] = sparkContext.parallelize(fetchResult.tweets)
       rdd.cache()
       val features = rdd map { t => (t, tfidf(Tweet(t).tokens)) }
-      sender ! features
+      sender ! OnlineFeatures(Some(features))
 
     case GetLatestModel =>
+      log.info(s"Received GetLatestModel message")
       val lr = logisticRegression.latestModel()
-      sender ! lr
+      sender ! OnlineTrainerModel(Some(lr))
       testOn(lr)
 
   }

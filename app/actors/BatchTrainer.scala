@@ -1,17 +1,16 @@
 package actors
 
-import akka.actor.{ActorLogging, Actor, Props}
+import akka.actor.{Actor, ActorLogging, Props}
 import features.TfIdf
 import org.apache.spark.SparkContext
-import org.apache.spark.ml.{Model, Pipeline}
-import org.apache.spark.ml.classification.{LogisticRegression, LogisticRegressionModel}
+import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator
 import org.apache.spark.ml.feature.HashingTF
 import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
+import org.apache.spark.ml.{Pipeline, Transformer}
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
-import play.api.Logger
 import play.api.Play._
 import twitter.{LabeledTweet, Tweet}
 
@@ -23,12 +22,15 @@ object BatchTrainer extends TfIdf {
 
   var corpus: RDD[Tweet] = _
 
-  var model: Model[_] = _
+  var model: Transformer = _
 
   val dumpCorpus = configuration.getBoolean("ml.corpus.dump").getOrElse(false)
 
   val dumpPath = configuration.getString("ml.corpus.path").getOrElse("")
 
+  case class BatchTrainerModel(model: Option[Transformer])
+
+  case class BatchFeatures(features: Option[RDD[(String, Vector)]])
 }
 
 class BatchTrainer(sparkContext: SparkContext) extends Actor with ActorLogging {
@@ -99,12 +101,12 @@ class BatchTrainer(sparkContext: SparkContext) extends Actor with ActorLogging {
       val rdd: RDD[String] = sparkContext.parallelize(fetchResult.tweets)
       rdd.cache()
       val features = rdd map { t => (t, tfidf(Tweet(t).tokens)) }
-      sender ! features
+      sender ! BatchFeatures(Some(features))
 
     case GetLatestModel =>
       log.info(s"Received GetLatestModel message")
       log.info(s"Return model ${model}")
-      sender ! model
+      sender ! BatchTrainerModel(Some(model))
 
   }
 

@@ -22,9 +22,10 @@ class Receptionist(sparkContext: SparkContext, eventServer: ActorRef) extends Ac
   val log = Logger(this.getClass)
 
   val twitterHandler = context.actorOf(TwitterHandler.props(sparkContext), "twitter-handler")
-  val trainer = context.actorOf(if (trainOnline) OnlineTrainer.props(sparkContext) else BatchTrainer.props(sparkContext), "trainer")
-  val classifier = context.actorOf(Classifier.props(sparkContext, twitterHandler, trainer), "classifier")
-  context.actorOf(CorpusInitializer.props(sparkContext, trainer, eventServer), "corpus-initializer")
+  val onlineTrainer = context.actorOf(OnlineTrainer.props(sparkContext), "online-trainer")
+  val batchTrainer = context.actorOf(BatchTrainer.props(sparkContext), "batch-trainer")
+  val classifier = context.actorOf(Classifier.props(sparkContext, twitterHandler, onlineTrainer, batchTrainer, eventServer), "classifier")
+  context.actorOf(CorpusInitializer.props(sparkContext, batchTrainer, onlineTrainer, eventServer), "corpus-initializer")
 
   override def receive = {
 
