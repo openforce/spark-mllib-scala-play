@@ -46,7 +46,7 @@ class Classifier(sparkContext: SparkContext, twitterHandler: ActorRef, trainer: 
       val client = sender
       for {
         fetchResult <- (twitterHandler ? Fetch(token)).mapTo[FetchResult]
-        features <- (trainer ? GetFeatures(fetchResult)).mapTo[RDD[(String, Vector)]]
+//        features <- (trainer ? GetFeatures(fetchResult)).mapTo[RDD[(String, Vector)]]
 //        model <- (trainer ? GetLatestModel).mapTo[org.apache.spark.mllib.classification.LogisticRegressionModel]
         model <- (trainer ? GetLatestModel).mapTo[org.apache.spark.ml.Model[_]]
       } yield {
