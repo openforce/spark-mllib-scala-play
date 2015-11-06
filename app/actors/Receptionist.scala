@@ -18,7 +18,7 @@ class Receptionist(sparkContext: SparkContext, eventServer: ActorRef) extends Ac
   val twitterHandler = context.actorOf(TwitterHandler.props(sparkContext), "twitter-handler")
   val onlineTrainer = context.actorOf(OnlineTrainer.props(sparkContext), "online-trainer")
   val classifier = context.actorOf(Classifier.props(sparkContext, twitterHandler, onlineTrainer), "classifier")
-  val corpusInitializer = context.actorOf(CorpusInitializer.props(sparkContext, onlineTrainer, eventServer), "corpus-initializer")
+  context.actorOf(CorpusInitializer.props(sparkContext, onlineTrainer, eventServer), "corpus-initializer")
 
   override def receive = {
 

@@ -5,16 +5,18 @@ import akka.actor.{Actor, Props}
 import features.TfIdf
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.classification.{LogisticRegressionModel, StreamingLogisticRegressionWithSGD}
-import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
+import org.apache.spark.mllib.evaluation.{MulticlassMetrics, BinaryClassificationMetrics}
 import org.apache.spark.mllib.feature._
-import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.mllib.linalg.{Vectors, DenseVector}
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SQLContext
 import org.apache.spark.streaming.twitter.TwitterUtils
 import org.apache.spark.streaming.{Duration, StreamingContext}
 import play.api.Logger
 import twitter.Tweet
 import twitter4j.auth.OAuthAuthorization
 import util.SentimentIdentifier
+import play.api.Play.{configuration, current}
 
 object OnlineTrainer extends TfIdf {
 
@@ -30,6 +32,10 @@ object OnlineTrainer extends TfIdf {
 
   var corpus: RDD[Tweet] = _
 
+  val dumpCorpus = configuration.getBoolean("ml.corpus.dump").getOrElse(false)
+
+  val dumpPath = configuration.getString("ml.corpus.path").getOrElse("")
+
 }
 
 class OnlineTrainer(sparkContext: SparkContext) extends Actor {
@@ -42,19 +48,25 @@ class OnlineTrainer(sparkContext: SparkContext) extends Actor {
 
   val twitterAuth = Some(new OAuthAuthorization(TwitterHandler.config))
 
+  val sqlContext = new SQLContext(sparkContext)
+
+  import sqlContext.implicits._
+
   override def receive = {
 
     case Train(tweets) =>
       log.info(s"Received corpus with tweets to train")
-//      corpus = sparkContext.makeRDD(tweets)
       corpus = tweets
+      if (dumpCorpus) corpus.map(t => (t.tokens.toSeq, t.sentiment)).toDF().write.parquet(dumpPath)
       train(corpus)
       logisticRegression = new StreamingLogisticRegressionWithSGD()
+        .setNumIterations(200)
         .setInitialWeights(Vectors.zeros(coefficients))
+        .setStepSize(1.0)
       val stream = TwitterUtils.createStream(ssc, twitterAuth, filters = SentimentIdentifier.sentimentEmoticons)
         .filter(t => t.getUser.getLang == "en" && !t.isRetweet)
         .map { Tweet(_) }
-        .map(tweet => tweet.toLabeledPoint { _ => tfidf(tweet.tokens)})
+        .map(tweet => tweet.toLabeledPoint { _ => tf(tweet.tokens)})
       logisticRegression.trainOn(stream)
       ssc.start()
 
@@ -77,9 +89,13 @@ class OnlineTrainer(sparkContext: SparkContext) extends Actor {
     val metrics = new BinaryClassificationMetrics(scoreAndLabels)
     log.info(s"Current model: ${model.toString()}")
     log.info(s"Area under the ROC curve: ${metrics.areaUnderROC()}")
-    val correct: Double = scoreAndLabels.filter { case ((score, label)) => score == label }.count()
+    val correct: Double = scoreAndLabels.map { case ((score, label)) => if (score == label) 1 else 0 }.reduce(_+_)
     val accuracy = correct / total
     log.info(s"Accuracy: $accuracy ($correct of $total)")
+    val mc = new MulticlassMetrics(scoreAndLabels)
+    log.info(s"Precision: ${mc.precision}")
+    log.info(s"Recall: ${mc.recall}")
+    log.info(s"F-Measure: ${mc.fMeasure}")
   }
 
 }

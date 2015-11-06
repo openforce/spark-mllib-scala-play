@@ -13,6 +13,7 @@ import play.api.Logger
 import twitter.Tweet
 import twitter4j.auth.OAuthAuthorization
 import util.SentimentIdentifier._
+import play.api.Play.{configuration, current}
 
 object CorpusInitializer {
 
@@ -24,9 +25,13 @@ object CorpusInitializer {
 
   case object Finish
 
+  val streamedTweetsSize = configuration.getInt("ml.corpus.streamed-tweets-size").getOrElse(500)
+
 }
 
 class CorpusInitializer(sparkContext: SparkContext, trainer: ActorRef, eventServer: ActorRef) extends Actor {
+
+  import CorpusInitializer._
 
   val log = Logger(this.getClass)
 
@@ -39,7 +44,7 @@ class CorpusInitializer(sparkContext: SparkContext, trainer: ActorRef, eventServ
   var posTweets: RDD[Tweet] = sparkContext.emptyRDD[Tweet]
   var negTweets: RDD[Tweet] = sparkContext.emptyRDD[Tweet]
 
-  val totalStreamedTweetSize = 500
+  val totalStreamedTweetSize = streamedTweetsSize
 
   var stop = false
 
