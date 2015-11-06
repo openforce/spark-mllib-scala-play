@@ -2,14 +2,13 @@ package actors
 
 import java.nio.file.{Files, Paths}
 
-import actors.CorpusInitializer.{Finish, Init, Load}
-import actors.OnlineTrainer.Train
 import akka.actor.{Actor, ActorRef, Props}
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.streaming.twitter.TwitterUtils
 import org.apache.spark.streaming.{Duration, StreamingContext}
 import play.api.Logger
+import play.api.Play.{configuration, current}
 import twitter.Tweet
 import twitter4j.auth.OAuthAuthorization
 import util.SentimentIdentifier._
@@ -24,9 +23,15 @@ object CorpusInitializer {
 
   case object Finish
 
+  val streamedTweetsSize = configuration.getInt("ml.corpus.initialization.tweets").getOrElse(500)
+
+  val streamedCorpus = configuration.getBoolean("ml.corpus.initialization.streamed").getOrElse(true)
+
 }
 
 class CorpusInitializer(sparkContext: SparkContext, trainer: ActorRef, eventServer: ActorRef) extends Actor {
+
+  import CorpusInitializer._
 
   val log = Logger(this.getClass)
 
@@ -39,15 +44,15 @@ class CorpusInitializer(sparkContext: SparkContext, trainer: ActorRef, eventServ
   var posTweets: RDD[Tweet] = sparkContext.emptyRDD[Tweet]
   var negTweets: RDD[Tweet] = sparkContext.emptyRDD[Tweet]
 
-  val totalStreamedTweetSize = 500
+  val totalStreamedTweetSize = streamedTweetsSize
 
   var stop = false
 
   override def preStart() = {
-    if(Files.exists(Paths.get(csvFilePath)))
-      self ! Load
-    else
+    if(streamedCorpus)
       self ! Init
+    else
+      self ! Load
   }
 
   override def receive = {

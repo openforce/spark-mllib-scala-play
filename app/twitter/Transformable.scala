@@ -1,5 +1,7 @@
 package twitter
 
+import chalk.text.LanguagePack
+
 trait Transformable extends Serializable {
 
   private final val emoRepl = Map(
@@ -52,16 +54,17 @@ trait Transformable extends Serializable {
 
   def url(word: String): String = word.replaceAll("http:\\/\\/\\S+", "URL")
 
-  def tokenizeSentence(sentence: String): Seq[String] =
+  def tokenizeSentence(sentence: String)(implicit languagePack: LanguagePack): Seq[String] =
     transformSentence(sentence)
       .split(" ")
       .map(_.toLowerCase)
       .map(shortenDuplicateChars)
       .map(username)
       .map(url)
+      .map(languagePack.stemmer.getOrElse(identity[String] _))
       .map(_.replaceAll("""\W+""", "")).toSeq
 
-  def unigramsAndBigrams(text: String): Set[String] =
+  def unigramsAndBigrams(text: String)(implicit languagePack: LanguagePack): Set[String] =
     (tokenizeSentence(text) ++ // unigrams
       text // bigrams
         .split("\\.")
