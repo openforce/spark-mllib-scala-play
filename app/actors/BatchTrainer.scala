@@ -3,7 +3,11 @@ package actors
 import akka.actor.{ActorLogging, Actor, Props}
 import features.TfIdf
 import org.apache.spark.SparkContext
+import org.apache.spark.ml.{Model, Pipeline}
 import org.apache.spark.ml.classification.{LogisticRegression, LogisticRegressionModel}
+import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator
+import org.apache.spark.ml.feature.HashingTF
+import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
@@ -15,11 +19,11 @@ object BatchTrainer extends TfIdf {
 
   def props(sparkContext: SparkContext) = Props(new BatchTrainer(sparkContext))
 
-  case class Point(tweet: String, label: Double, features: Vector)
+  case class Point(tweet: String, label: Double, tokens: Seq[String])
 
   var corpus: RDD[Tweet] = _
 
-  var model: LogisticRegressionModel = _
+  var model: Model[_] = _
 
   val dumpCorpus = configuration.getBoolean("ml.corpus.dump").getOrElse(false)
 
@@ -43,7 +47,7 @@ class BatchTrainer(sparkContext: SparkContext) extends Actor with ActorLogging {
 
       log.info(s"Start batch training")
 
-      val data: DataFrame = corpus.map(t => Point(t.text, t.sentiment, t.toLabeledPoint.features)).toDF()
+      val data: DataFrame = corpus.map(t => Point(t.text, t.sentiment, t.tokens.toSeq)).toDF()
 
       train(corpus)
 
@@ -51,9 +55,27 @@ class BatchTrainer(sparkContext: SparkContext) extends Actor with ActorLogging {
       val trainData = splits(0)
       val testData = splits(1)
 
-      model = new LogisticRegression()
-        .fit(trainData) //Pipeline.create.fit(train)
-      // sparkContext.parallelize(Seq(model), 1).saveAsObjectFile("app/resources/pipeline.model")
+      val hashingTF = new HashingTF()
+        .setInputCol("tokens")
+        .setOutputCol("features")
+      val lr = new LogisticRegression()
+        .setMaxIter(10)
+      val pipeline = new Pipeline()
+        .setStages(Array(hashingTF, lr))
+
+      val paramGrid = new ParamGridBuilder()
+        .addGrid(hashingTF.numFeatures, Array(10, 100, 1000))
+        .addGrid(lr.regParam, Array(0.1, 0.01))
+        .build()
+
+      val cv = new CrossValidator()
+        .setEstimator(pipeline)
+        .setEvaluator(new BinaryClassificationEvaluator)
+        .setEstimatorParamMaps(paramGrid)
+        .setNumFolds(10)
+
+      model = cv.fit(data).bestModel
+
 
       var total = 0.0
       var correct = 0.0
