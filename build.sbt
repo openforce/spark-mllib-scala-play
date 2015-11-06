@@ -26,7 +26,9 @@ scalacOptions ++= Seq("-deprecation", "-unchecked")
 resolvers ++= Seq(
   Resolver.defaultLocal,
   Resolver.mavenLocal,
-  "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository"
+  "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository",
+  "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/",
+  "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/"
   )
 
 libraryDependencies ++= Seq(
@@ -37,7 +39,10 @@ libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-mllib" % sparkVersion,
   "org.apache.spark" %% "spark-streaming" % sparkVersion,
   "org.apache.spark" %% "spark-streaming-twitter" % sparkVersion,
-  "org.jblas" % "jblas" % "1.2.4"
+  "org.jblas" % "jblas" % "1.2.4",
+  "org.scalanlp" %% "breeze" % "0.6-SNAPSHOT",
+  "org.scalanlp" % "chalk" % "1.3.0" intransitive(),
+  "org.scalanlp" % "nak" % "1.2.0" intransitive()
 )
 
 dependencyOverrides ++= Set(
