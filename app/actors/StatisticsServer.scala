@@ -1,11 +1,11 @@
 package actors
 
-import actors.Messages.Subscribe
+import actors.Messages.{Unsubscribe, Subscribe}
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.event.LoggingReceive
 import features.TfIdf
 import org.apache.spark.SparkContext
-import org.apache.spark.ml.Model
+import org.apache.spark.ml.{PipelineModel, Model}
 import org.apache.spark.mllib.classification.LogisticRegressionModel
 import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
 import org.apache.spark.rdd.RDD
@@ -38,7 +38,7 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
 
   override def receive = LoggingReceive {
 
-    case m: Model[_] => testBatchModel(m)
+    case m: PipelineModel => testBatchModel(m)
 
     case m: LogisticRegressionModel => testOnlineModel(m)
 
@@ -49,6 +49,10 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
     case Subscribe =>
       context.watch(sender)
       clients += sender
+
+    case Unsubscribe =>
+      context.unwatch(sender)
+      clients -= sender
 
   }
 
@@ -73,16 +77,15 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
 
     val df = corpus.map(t => {
       (t.tokens.toSeq, t.sentiment)
-    }).toDF()
+    }).toDF("tokens", "label")
 
     model
       .transform(df)
-      .select("tweet", "features", "label", "probability", "prediction")
+      .select("tokens", "label", "probability", "prediction")
       .collect()
-      .foreach { case Row(tweet, features, label, prob, prediction) =>
+      .foreach { case Row(tokens, label, prob, prediction) =>
       if (label == prediction) correct += 1
       total += 1
-      log.info(s"'$tweet': ($label) --> prediction=$prediction ($prob)")
     }
 
     val precision = correct / total

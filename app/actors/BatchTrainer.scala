@@ -1,25 +1,21 @@
 package actors
 
-import akka.actor.{ActorLogging, Actor, Props}
-import features.TfIdf
+import actors.Receptionist.TrainingFinished
+import akka.actor.{ActorRef, Actor, ActorLogging, Props}
 import org.apache.spark.SparkContext
-import org.apache.spark.ml.{Model, Pipeline}
-import org.apache.spark.ml.classification.{LogisticRegression, LogisticRegressionModel}
+import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator
 import org.apache.spark.ml.feature.HashingTF
 import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
-import org.apache.spark.mllib.linalg.Vector
+import org.apache.spark.ml.{Model, Pipeline}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, Row, SQLContext}
-import play.api.Logger
+import org.apache.spark.sql.{DataFrame, SQLContext}
 import play.api.Play._
 import twitter.{LabeledTweet, Tweet}
 
-object BatchTrainer extends TfIdf {
+object BatchTrainer {
 
-  def props(sparkContext: SparkContext) = Props(new BatchTrainer(sparkContext))
-
-  case class Point(tweet: String, label: Double, tokens: Seq[String])
+  def props(sparkContext: SparkContext, receptionist: ActorRef) = Props(new BatchTrainer(sparkContext, receptionist: ActorRef))
 
   var corpus: RDD[Tweet] = _
 
@@ -31,7 +27,7 @@ object BatchTrainer extends TfIdf {
 
 }
 
-class BatchTrainer(sparkContext: SparkContext) extends Actor with ActorLogging {
+class BatchTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends Actor with ActorLogging {
 
   import BatchTrainer._
 
@@ -44,17 +40,8 @@ class BatchTrainer(sparkContext: SparkContext) extends Actor with ActorLogging {
   override def receive = {
 
     case Train(corpus: RDD[Tweet]) =>
-
       log.info(s"Start batch training")
-
-      val data: DataFrame = corpus.map(t => Point(t.text, t.sentiment, t.tokens.toSeq)).toDF()
-
-      train(corpus)
-
-      val splits = data.randomSplit(Array(0.7, 0.3), 42)
-      val trainData = splits(0)
-      val testData = splits(1)
-
+      val data: DataFrame = corpus.map(t => (t.text, t.sentiment, t.tokens.toSeq)).toDF("tweet", "label", "tokens")
       val hashingTF = new HashingTF()
         .setInputCol("tokens")
         .setOutputCol("features")
@@ -62,44 +49,20 @@ class BatchTrainer(sparkContext: SparkContext) extends Actor with ActorLogging {
         .setMaxIter(10)
       val pipeline = new Pipeline()
         .setStages(Array(hashingTF, lr))
-
       val paramGrid = new ParamGridBuilder()
         .addGrid(hashingTF.numFeatures, Array(10, 100, 1000))
         .addGrid(lr.regParam, Array(0.1, 0.01))
         .build()
-
       val cv = new CrossValidator()
         .setEstimator(pipeline)
         .setEvaluator(new BinaryClassificationEvaluator)
         .setEstimatorParamMaps(paramGrid)
-        .setNumFolds(10)
-
+        .setNumFolds(2)
       model = cv.fit(data).bestModel
+      log.info("Batch training finished")
 
+      receptionist ! TrainingFinished
 
-      var total = 0.0
-      var correct = 0.0
-
-      model
-        .transform(testData)
-        .select("tweet", "features", "label", "probability", "prediction")
-        .collect()
-        .foreach { case Row(tweet, features, label, prob, prediction) =>
-          if (label == prediction) correct += 1
-          total += 1
-          log.info(s"'$tweet': ($label) --> prediction=$prediction ($prob)")
-        }
-
-      val precision = correct / total
-
-      log.info(s"precision: ${precision}")
-
-    case GetFeatures(fetchResult) =>
-      log.info(s"Received GetFeatures message")
-      val rdd: RDD[String] = sparkContext.parallelize(fetchResult.tweets)
-      rdd.cache()
-      val features = rdd map { t => (t, tfidf(Tweet(t).tokens)) }
-      sender ! features
 
     case GetLatestModel =>
       log.info(s"Received GetLatestModel message")

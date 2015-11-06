@@ -15,7 +15,7 @@ import util.SentimentIdentifier._
 
 object CorpusInitializer {
 
-  def props(sparkContext: SparkContext, trainer: ActorRef, eventServer: ActorRef) = Props(new CorpusInitializer(sparkContext, trainer, eventServer))
+  def props(sparkContext: SparkContext, trainer: ActorRef, eventServer: ActorRef, statisticsServer: ActorRef) = Props(new CorpusInitializer(sparkContext, trainer, eventServer, statisticsServer))
 
   case object Init
 
@@ -29,7 +29,7 @@ object CorpusInitializer {
 
 }
 
-class CorpusInitializer(sparkContext: SparkContext, trainer: ActorRef, eventServer: ActorRef) extends Actor {
+class CorpusInitializer(sparkContext: SparkContext, trainer: ActorRef, eventServer: ActorRef, statisticsServer: ActorRef) extends Actor {
 
   import CorpusInitializer._
 
@@ -63,6 +63,7 @@ class CorpusInitializer(sparkContext: SparkContext, trainer: ActorRef, eventServ
       val msg = s"Send ${posTweets.count} positive and ${negTweets.count} negative tweets to trainer"
       log.info(msg)
       eventServer ! msg
+      statisticsServer ! (posTweets ++ negTweets)
       trainer ! Train(posTweets ++ negTweets)
       context.stop(self)
     }
