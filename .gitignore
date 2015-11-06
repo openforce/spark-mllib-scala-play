@@ -29,3 +29,7 @@
 /data/full-corpus.csv
 /data/*.tsv
 .jira-url
+data/.ipynb_checkpoints/
+data/derby.log
+data/metastore_db/
+data/trainingandtestdata.bkp/
