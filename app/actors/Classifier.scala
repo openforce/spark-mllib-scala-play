@@ -13,7 +13,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SQLContext}
 import play.api.Logger
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import twitter.LabeledTweet
+import twitter.{Tweet, LabeledTweet}
 
 import scala.concurrent.duration._
 
@@ -25,7 +25,7 @@ object Classifier {
 
   case class UpdateModel(model: PipelineModel)
 
-  case class Point(tweet: String, features: Vector)
+  case class Point(tweet: String, tokens: Seq[String])
 
 }
 
@@ -48,12 +48,11 @@ class Classifier(sparkContext: SparkContext, twitterHandler: ActorRef, trainer: 
         fetchResult <- (twitterHandler ? Fetch(token)).mapTo[FetchResult]
         features <- (trainer ? GetFeatures(fetchResult)).mapTo[RDD[(String, Vector)]]
 //        model <- (trainer ? GetLatestModel).mapTo[org.apache.spark.mllib.classification.LogisticRegressionModel]
-        model <- (trainer ? GetLatestModel).mapTo[org.apache.spark.ml.classification.LogisticRegressionModel]
-        foo = model
+        model <- (trainer ? GetLatestModel).mapTo[org.apache.spark.ml.Model[_]]
       } yield {
         val results =
           model
-            .transform(features.map { case x => Point(x._1, x._2)}.toDF())
+            .transform(fetchResult.tweets.map(t => Point(t, Tweet(t).tokens.toSeq)).toDF())
             .select("tweet","prediction")
             .collect()
             .map { case Row(tweet: String, prediction: Double) =>
