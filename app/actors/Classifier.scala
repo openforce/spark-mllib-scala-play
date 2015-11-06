@@ -1,6 +1,6 @@
 package actors
 
-import actors.BatchTrainer.{BatchFeatures, BatchTrainerModel}
+import actors.BatchTrainer.BatchTrainerModel
 import actors.Classifier._
 import actors.OnlineTrainer.{OnlineFeatures, OnlineTrainerModel}
 import actors.TwitterHandler.{Fetch, FetchResult}
@@ -9,7 +9,7 @@ import akka.event.LoggingReceive
 import akka.pattern._
 import akka.util.Timeout
 import org.apache.spark.SparkContext
-import org.apache.spark.ml.{Transformer, Model, PipelineModel}
+import org.apache.spark.ml.{PipelineModel, Transformer}
 import org.apache.spark.mllib.classification.LogisticRegressionModel
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
@@ -55,35 +55,10 @@ class Classifier(sparkContext: SparkContext, twitterHandler: ActorRef, onlineTra
         fetchResult =>
           handler ! fetchResult
           onlineTrainer.tell(GetFeatures(fetchResult), handler)
-          batchTrainer.tell(GetFeatures(fetchResult), handler)
           onlineTrainer.tell(GetLatestModel, handler)
           batchTrainer.tell(GetLatestModel, handler)
       }
-
-
-//      for {
-//        fetchResult <- (twitterHandler ? Fetch(token)).mapTo[FetchResult]
-//        features <- (trainer ? GetFeatures(fetchResult)).mapTo[RDD[(String, Vector)]]
-////        model <- (trainer ? GetLatestModel).mapTo[org.apache.spark.mllib.classification.LogisticRegressionModel]
-//        model <- (trainer ? GetLatestModel).mapTo[org.apache.spark.ml.Model[_]]
-//      } yield {
-//        val results =
-//          model
-//            .transform(fetchResult.tweets.map(t => Point(t, Tweet(t).tokens.toSeq)).toDF())
-//            .select("tweet","prediction")
-//            .collect()
-//            .map { case Row(tweet: String, prediction: Double) =>
-//              LabeledTweet(tweet, prediction.toString)
-//            }
-//// online trainer
-////        features.map { case (tweet, vector) =>
-////          LabeledTweet(tweet, model.predict(vector).toString)
-////        }.collect()
-//
-//        originalSender ! results
-//      }
   }
-
 }
 
 object TrainingModelResponseHandler {
@@ -101,7 +76,6 @@ class TrainingModelResponseHandler(onlineTrainer: ActorRef, batchTrainer: ActorR
   import sqlContext.implicits._
 
   var fetchResult: Option[FetchResult] = None
-  var batchFeatures: Option[RDD[(String, Vector)]] = None
   var onlineFeatures: Option[RDD[(String, Vector)]] = None
   var batchTrainerModel: Option[Transformer] = None
   var onlineTrainerModel: Option[LogisticRegressionModel] = None
@@ -110,11 +84,6 @@ class TrainingModelResponseHandler(onlineTrainer: ActorRef, batchTrainer: ActorR
 
     case fr: FetchResult =>
       fetchResult = Some(fr)
-      transform
-
-    case BatchFeatures(features) =>
-      log.info(s"Received batch model features: $features")
-      batchFeatures = features
       transform
 
     case OnlineFeatures(features) =>
@@ -134,9 +103,9 @@ class TrainingModelResponseHandler(onlineTrainer: ActorRef, batchTrainer: ActorR
 
   }
 
-  def transform = (fetchResult, batchFeatures, onlineFeatures, batchTrainerModel, onlineTrainerModel) match {
+  def transform = (fetchResult, onlineFeatures, batchTrainerModel, onlineTrainerModel) match {
 
-    case (Some(fetchR), Some(batchF), Some(onlineF), Some(batchM), Some(onlineM)) =>
+    case (Some(fetchR), Some(onlineF), Some(batchM), Some(onlineM)) =>
       log.info(s"Values received for both training models")
       timeoutMessenger.cancel // TODO
 
