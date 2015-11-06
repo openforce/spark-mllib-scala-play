@@ -1,32 +1,24 @@
 package actors
 
-import actors.TwitterHandler.FetchResult
-import akka.actor.{Actor, Props}
+import akka.actor.{ActorLogging, Actor, Props}
 import features.TfIdf
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.classification.{LogisticRegressionModel, StreamingLogisticRegressionWithSGD}
-import org.apache.spark.mllib.evaluation.{MulticlassMetrics, BinaryClassificationMetrics}
-import org.apache.spark.mllib.feature._
-import org.apache.spark.mllib.linalg.{Vectors, DenseVector}
+import org.apache.spark.mllib.evaluation.{BinaryClassificationMetrics, MulticlassMetrics}
+import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.streaming.twitter.TwitterUtils
 import org.apache.spark.streaming.{Duration, StreamingContext}
 import play.api.Logger
+import play.api.Play.{configuration, current}
 import twitter.Tweet
 import twitter4j.auth.OAuthAuthorization
 import util.SentimentIdentifier
-import play.api.Play.{configuration, current}
 
 object OnlineTrainer extends TfIdf {
 
   def props(sparkContext: SparkContext) = Props(new OnlineTrainer(sparkContext))
-
-  case object GetLatestModel
-
-  case class Train(corpus: RDD[Tweet])
-
-  case class GetFeatures(fetchResult: FetchResult)
 
   var logisticRegression: StreamingLogisticRegressionWithSGD = _
 
@@ -38,11 +30,9 @@ object OnlineTrainer extends TfIdf {
 
 }
 
-class OnlineTrainer(sparkContext: SparkContext) extends Actor {
+class OnlineTrainer(sparkContext: SparkContext) extends Actor with ActorLogging {
 
   import OnlineTrainer._
-
-  val log = Logger(this.getClass)
 
   val ssc = new StreamingContext(sparkContext, Duration(1000))
 

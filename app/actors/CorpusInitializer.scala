@@ -2,18 +2,16 @@ package actors
 
 import java.nio.file.{Files, Paths}
 
-import actors.CorpusInitializer.{Finish, Init, Load}
-import actors.OnlineTrainer.Train
 import akka.actor.{Actor, ActorRef, Props}
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.streaming.twitter.TwitterUtils
 import org.apache.spark.streaming.{Duration, StreamingContext}
 import play.api.Logger
+import play.api.Play.{configuration, current}
 import twitter.Tweet
 import twitter4j.auth.OAuthAuthorization
 import util.SentimentIdentifier._
-import play.api.Play.{configuration, current}
 
 object CorpusInitializer {
 
