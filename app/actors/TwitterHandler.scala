@@ -1,7 +1,7 @@
 package actors
 
 
-import actors.TwitterHandler.{Fetch, FetchResult}
+import actors.TwitterHandler.{Fetch, FetchResponse}
 import akka.actor.{Actor, Props}
 import org.apache.spark.SparkContext
 import play.api.Logger
@@ -32,7 +32,7 @@ object TwitterHandler {
 
   case class Fetch(keyword: String)
 
-  case class FetchResult(keyword: String, tweets: Seq[String])
+  case class FetchResponse(keyword: String, tweets: Seq[String])
 
 }
 
@@ -43,12 +43,12 @@ class TwitterHandler(sparkContext: SparkContext, configuration: Configuration) e
   override def receive = {
 
     case Fetch(keyword) => {
-      log.info(s"Received Fetch message with keyword=$keyword from $sender")
+      log.debug(s"Received Fetch message with keyword=$keyword from $sender")
       val tweets = TwitterHelper.fetch(keyword, sparkContext, configuration)
-      sender ! FetchResult(keyword, tweets)
+      sender ! FetchResponse(keyword, tweets)
     }
 
-    case undefined => log.info(s"Unexpected message $undefined")
+    case undefined => log.warn(s"Unexpected message $undefined")
   }
 
 }

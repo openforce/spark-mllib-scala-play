@@ -40,7 +40,8 @@ libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-streaming" % sparkVersion,
   "org.apache.spark" %% "spark-streaming-twitter" % sparkVersion,
   "org.jblas" % "jblas" % "1.2.4",
-  "org.scalanlp" %% "breeze" % "0.6-SNAPSHOT",
+  "com.github.fommil.netlib" % "all" % "1.1.2" pomOnly(),
+  "org.scalanlp" %% "breeze" % "0.11.2",
   "org.scalanlp" % "chalk" % "1.3.0" intransitive(),
   "org.scalanlp" % "nak" % "1.2.0" intransitive()
 )

@@ -45,6 +45,7 @@ class BatchTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends A
   override def receive = {
 
     case Train(corpus: RDD[Tweet]) =>
+      log.debug(s"Received Train message with tweets corpus")
       log.info(s"Start batch training")
       val data: DataFrame = corpus.map(t => (t.text, t.sentiment, t.tokens.toSeq)).toDF("tweet", "label", "tokens")
       val hashingTF = new HashingTF()
@@ -68,11 +69,10 @@ class BatchTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends A
 
       receptionist ! TrainingFinished
 
-
     case GetLatestModel =>
-      log.info(s"Received GetLatestModel message")
-      log.info(s"Return model ${model}")
+      log.debug(s"Received GetLatestModel message")
       sender ! BatchTrainerModel(Some(model))
+      log.debug(s"Returned model $model")
 
   }
 

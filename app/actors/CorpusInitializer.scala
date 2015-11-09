@@ -2,7 +2,7 @@ package actors
 
 import java.nio.file.{Files, Paths}
 
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{ActorLogging, Actor, ActorRef, Props}
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.streaming.twitter.TwitterUtils
@@ -15,11 +15,12 @@ import util.SentimentIdentifier._
 
 object CorpusInitializer {
 
-  def props(sparkContext: SparkContext, batchTrainer: ActorRef, onlineTrainer: ActorRef, eventServer: ActorRef, statisticsServer: ActorRef) = Props(new CorpusInitializer(sparkContext, batchTrainer, onlineTrainer, eventServer, statisticsServer))
+  def props(sparkContext: SparkContext, batchTrainer: ActorRef, onlineTrainer: ActorRef, eventServer: ActorRef, statisticsServer: ActorRef) =
+    Props(new CorpusInitializer(sparkContext, batchTrainer, onlineTrainer, eventServer, statisticsServer))
 
-  case object Init
+  case object InitFromStream
 
-  case object Load
+  case object LoadFromFs
 
   case object Finish
 
@@ -29,11 +30,9 @@ object CorpusInitializer {
 
 }
 
-class CorpusInitializer(sparkContext: SparkContext, batchTrainer: ActorRef, onlineTrainer: ActorRef, eventServer: ActorRef, statisticsServer: ActorRef) extends Actor {
+class CorpusInitializer(sparkContext: SparkContext, batchTrainer: ActorRef, onlineTrainer: ActorRef, eventServer: ActorRef, statisticsServer: ActorRef) extends Actor with ActorLogging {
 
   import CorpusInitializer._
-
-  val log = Logger(this.getClass)
 
   val ssc = new StreamingContext(sparkContext, Duration(1000))
 
@@ -50,27 +49,30 @@ class CorpusInitializer(sparkContext: SparkContext, batchTrainer: ActorRef, onli
 
   override def preStart() = {
     if(streamedCorpus)
-      self ! Init
+      self ! InitFromStream
     else
-      self ! Load
+      self ! LoadFromFs
   }
 
   override def receive = {
 
     case Finish => {
+      log.debug(s"Received Finish message")
       log.info(s"Terminating streaming context...")
       ssc.stop(false, true)
-      val msg = s"Send ${posTweets.count} positive and ${negTweets.count} negative tweets to trainer"
+      val msg = s"Send ${posTweets.count} positive and ${negTweets.count} negative tweets to batch and online trainer"
       log.info(msg)
       eventServer ! msg
       val trainMessage = Train(posTweets ++ negTweets)
       batchTrainer ! trainMessage
       onlineTrainer ! trainMessage
-      statisticsServer ! (posTweets ++ negTweets)
       context.stop(self)
+      statisticsServer ! (posTweets ++ negTweets)
+      eventServer ! "Corpus initialization finished"
     }
 
-    case Load => {
+    case LoadFromFs => {
+      log.debug(s"Received LoadFromFs message")
       val msg = s"Load tweets corpus from file system..."
       log.info(msg)
       eventServer ! msg
@@ -91,8 +93,8 @@ class CorpusInitializer(sparkContext: SparkContext, batchTrainer: ActorRef, onli
       self ! Finish
     }
 
-    case Init => {
-
+    case InitFromStream => {
+      log.debug(s"Received InitFromStream message")
       val msg = s"Initialize tweets corpus from twitter stream..."
       log.info(msg)
       eventServer ! msg

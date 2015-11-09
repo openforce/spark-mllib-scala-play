@@ -1,6 +1,5 @@
 package actors
 
-import actors.Messages.{Unsubscribe, Subscribe}
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.event.LoggingReceive
 

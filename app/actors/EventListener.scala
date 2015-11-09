@@ -1,7 +1,6 @@
 package actors
 
-import actors.Messages.{Unsubscribe, Subscribe}
-import akka.actor.{Actor, Props, ActorRef}
+import akka.actor.{Actor, ActorRef, Props}
 import play.api.libs.json.JsValue
 
 object EventListener {

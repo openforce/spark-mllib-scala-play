@@ -49,7 +49,7 @@ class OnlineTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends 
   override def receive = {
 
     case Train(tweets) =>
-      log.info(s"Received corpus with tweets to train")
+      log.debug(s"Received Train message with tweets corpus")
       corpus = tweets
       if (dumpCorpus) corpus.map(t => (t.tokens.toSeq, t.sentiment)).toDF().write.parquet(dumpPath)
       train(corpus)
@@ -57,6 +57,7 @@ class OnlineTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends 
         .setNumIterations(200)
         .setInitialWeights(Vectors.zeros(coefficients))
         .setStepSize(1.0)
+      log.info(s"Start twitter stream for online training")
       val stream = TwitterUtils.createStream(ssc, twitterAuth, filters = SentimentIdentifier.sentimentEmoticons)
         .filter(t => t.getUser.getLang == "en" && !t.isRetweet)
         .map { Tweet(_) }
@@ -67,14 +68,14 @@ class OnlineTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends 
       receptionist ! TrainingFinished
 
     case GetFeatures(fetchResult) =>
-      log.info(s"Received GetFeatures message")
+      log.debug(s"Received GetFeatures message")
       val rdd: RDD[String] = sparkContext.parallelize(fetchResult.tweets)
       rdd.cache()
       val features = rdd map { t => (t, tfidf(Tweet(t).tokens)) }
       sender ! OnlineFeatures(Some(features))
 
     case GetLatestModel =>
-      log.info(s"Received GetLatestModel message")
+      log.debug(s"Received GetLatestModel message")
       val lr = logisticRegression.latestModel()
       sender ! OnlineTrainerModel(Some(lr))
       testOn(lr)
