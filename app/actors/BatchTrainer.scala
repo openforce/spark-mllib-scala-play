@@ -7,7 +7,9 @@ import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator
 import org.apache.spark.ml.feature.HashingTF
 import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
-import org.apache.spark.ml.{Model, Pipeline}
+import org.apache.spark.ml.Transformer
+import org.apache.spark.mllib.linalg.Vector
+import org.apache.spark.ml.Pipeline
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SQLContext}
 import play.api.Play._
@@ -19,12 +21,15 @@ object BatchTrainer {
 
   var corpus: RDD[Tweet] = _
 
-  var model: Model[_] = _
+  var model: Transformer = _
 
   val dumpCorpus = configuration.getBoolean("ml.corpus.dump").getOrElse(false)
 
   val dumpPath = configuration.getString("ml.corpus.path").getOrElse("")
 
+  case class BatchTrainerModel(model: Option[Transformer])
+
+  case class BatchFeatures(features: Option[RDD[(String, Vector)]])
 }
 
 class BatchTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends Actor with ActorLogging {
@@ -67,7 +72,7 @@ class BatchTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends A
     case GetLatestModel =>
       log.info(s"Received GetLatestModel message")
       log.info(s"Return model ${model}")
-      sender ! model
+      sender ! BatchTrainerModel(Some(model))
 
   }
 

@@ -22,8 +22,8 @@ trait TfIdf {
     idf = new IDF().fit(hashingTF)
   }
 
-  def tf(text: Set[String]) = hashingTf.transform(text)
+  def tf(text: Set[String]): Vector = hashingTf.transform(text)
 
-  def tfidf(text: Set[String]) = idf.transform(hashingTf.transform(text))
+  def tfidf(text: Set[String]): Vector = idf.transform(hashingTf.transform(text))
 
 }

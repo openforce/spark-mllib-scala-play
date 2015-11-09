@@ -31,8 +31,8 @@ class Application @Inject() (system: ActorSystem, sparkContext: SparkContext) ex
   def classify(keyword: String) = Action.async {
     for {
       classifier <- (receptionist ? GetClassifier).mapTo[ActorRef]
-      classificationResults <- (classifier ? Classify(keyword)).mapTo[Array[LabeledTweet]]
-    } yield Ok(Json.toJson(classificationResults))
+      classificationResults <- (classifier ? Classify(keyword)).mapTo[ClassificationResult]
+    } yield Ok(Json.toJson(classificationResults.onlineModelResult))
   }
 
   def index = Action {

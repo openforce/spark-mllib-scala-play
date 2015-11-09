@@ -28,15 +28,16 @@ class Receptionist(sparkContext: SparkContext, eventServer: ActorRef, statistics
   val log = Logger(this.getClass)
 
   val twitterHandler = context.actorOf(TwitterHandler.props(sparkContext), "twitter-handler")
-  val trainer = context.actorOf(if (trainOnline) OnlineTrainer.props(sparkContext, self) else BatchTrainer.props(sparkContext, self), "trainer")
-  val classifier = context.actorOf(Classifier.props(sparkContext, twitterHandler, trainer), "classifier")
-  context.actorOf(CorpusInitializer.props(sparkContext, trainer, eventServer, statisticsServer), "corpus-initializer")
+  val onlineTrainer = context.actorOf(OnlineTrainer.props(sparkContext, self), "online-trainer")
+  val batchTrainer = context.actorOf(BatchTrainer.props(sparkContext, self), "batch-trainer")
+  val classifier = context.actorOf(Classifier.props(sparkContext, twitterHandler, onlineTrainer, batchTrainer, eventServer), "classifier")
+  context.actorOf(CorpusInitializer.props(sparkContext, batchTrainer, onlineTrainer, eventServer, statisticsServer), "corpus-initializer")
 
   override def receive = {
 
     case GetClassifier => sender ! classifier
 
-    case TrainingFinished => context.system.scheduler.schedule(0 seconds, 1 seconds)(trainer ! GetLatestModel)
+    case TrainingFinished => context.system.scheduler.schedule(0 seconds, 1 seconds)(batchTrainer ! GetLatestModel)
 
     case m: LogisticRegressionModel  => statisticsServer ! m
 

@@ -26,6 +26,7 @@ class TwitterHandlerSpec extends TestKit(ActorSystem("TwitterHandlerSpec"))
       .setOAuthConsumerSecret(myConfig.getString("consumer.secret"))
       .setOAuthAccessToken(myConfig.getString("access-token.key"))
       .setOAuthAccessTokenSecret(myConfig.getString("access-token.secret"))
+      .setUseSSL(true)
       .build()
   }
 
