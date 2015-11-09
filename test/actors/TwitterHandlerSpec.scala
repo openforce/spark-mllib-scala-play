@@ -1,6 +1,6 @@
 package actors
 
-import actors.TwitterHandler.{Fetch, FetchResult}
+import actors.TwitterHandler.{Fetch, FetchResponse}
 import akka.actor.ActorSystem
 import akka.testkit.{TestActorRef, TestKit}
 import modules.SparkUtil
@@ -37,7 +37,7 @@ class TwitterHandlerSpec extends TestKit(ActorSystem("TwitterHandlerSpec"))
       val real = TestActorRef[TwitterHandler](TwitterHandler.props(SparkUtil.sparkContext, config))
       real ! Fetch("Apple")
 
-      expectMsgClass(FetchResult.getClass)
+      expectMsgClass(FetchResponse.getClass)
     }
   }
 

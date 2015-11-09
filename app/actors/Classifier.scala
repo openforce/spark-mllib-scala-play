@@ -2,11 +2,11 @@ package actors
 
 import actors.BatchTrainer.BatchTrainerModel
 import actors.Classifier._
+import actors.FetchResponseHandler.FetchResponseTimeout
 import actors.OnlineTrainer.{OnlineFeatures, OnlineTrainerModel}
-import actors.TwitterHandler.{Fetch, FetchResult}
+import actors.TwitterHandler.{Fetch, FetchResponse}
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.event.LoggingReceive
-import akka.pattern._
 import akka.util.Timeout
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.{PipelineModel, Transformer}
@@ -14,7 +14,6 @@ import org.apache.spark.mllib.classification.LogisticRegressionModel
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SQLContext}
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import twitter.{LabeledTweet, Tweet}
 
 import scala.concurrent.duration._
@@ -48,16 +47,51 @@ class Classifier(sparkContext: SparkContext, twitterHandler: ActorRef, onlineTra
       log.info(s"Start classifying tweets for token '$token'")
       val originalSender = sender
 
-      val handler = context.actorOf(TrainingModelResponseHandler.props(onlineTrainer, batchTrainer, originalSender, sparkContext)/*, "cameo-message-handler"*/)
+      val handler = context.actorOf(FetchResponseHandler.props(onlineTrainer, batchTrainer, originalSender, sparkContext)/*, "cameo-message-handler"*/)
 
       log.debug(s"Created handler $handler")
-      (twitterHandler ? Fetch(token)).mapTo[FetchResult].map {
-        fetchResult =>
-          handler ! fetchResult
-          onlineTrainer.tell(GetFeatures(fetchResult), handler)
-          onlineTrainer.tell(GetLatestModel, handler)
-          batchTrainer.tell(GetLatestModel, handler)
-      }
+
+      twitterHandler.tell(Fetch(token), handler)
+  }
+}
+
+
+object FetchResponseHandler {
+
+  case object FetchResponseTimeout
+
+  def props(onlineTrainer: ActorRef, batchTrainer: ActorRef, originalSender: ActorRef, sparkContext: SparkContext) =
+    Props(new FetchResponseHandler(onlineTrainer, batchTrainer, originalSender, sparkContext))
+}
+
+class FetchResponseHandler(onlineTrainer: ActorRef, batchTrainer: ActorRef, originalSender: ActorRef, sparkContext: SparkContext) extends Actor with ActorLogging {
+
+
+  def receive = LoggingReceive {
+
+    case fetchResponse: FetchResponse =>
+      timeoutMessenger.cancel()
+
+      val handler = context.actorOf(TrainingModelResponseHandler.props(fetchResponse, originalSender, sparkContext)/*, "cameo-message-handler"*/)
+      onlineTrainer.tell(GetFeatures(fetchResponse), handler)
+      onlineTrainer.tell(GetLatestModel, handler)
+      batchTrainer.tell(GetLatestModel, handler)
+
+    case FetchResponseTimeout =>
+      log.debug("Timeout occurred")
+      sendResponseAndShutdown(FetchResponseTimeout)
+  }
+
+  def sendResponseAndShutdown(response: Any) = {
+    originalSender ! response
+    log.debug(s"Stopping context capturing actor")
+    context.stop(self)
+  }
+
+  import context.dispatcher
+
+  val timeoutMessenger = context.system.scheduler.scheduleOnce(5 seconds) {
+    self ! FetchResponseTimeout
   }
 }
 
@@ -65,26 +99,21 @@ object TrainingModelResponseHandler {
 
   case object TrainingModelRetrievalTimeout
 
-  def props(onlineTrainer: ActorRef, batchTrainer: ActorRef, originalSender: ActorRef, sparkContext: SparkContext) =
-    Props(new TrainingModelResponseHandler(onlineTrainer, batchTrainer, originalSender, sparkContext))
+  def props(fetchResponse: FetchResponse,originalSender: ActorRef, sparkContext: SparkContext) =
+    Props(new TrainingModelResponseHandler(fetchResponse, originalSender, sparkContext))
 }
 
-class TrainingModelResponseHandler(onlineTrainer: ActorRef, batchTrainer: ActorRef, originalSender: ActorRef, sparkContext: SparkContext) extends Actor with ActorLogging {
+class TrainingModelResponseHandler(fetchResponse: FetchResponse, originalSender: ActorRef, sparkContext: SparkContext) extends Actor with ActorLogging {
 
   import TrainingModelResponseHandler._
   val sqlContext = new SQLContext(sparkContext)
   import sqlContext.implicits._
 
-  var fetchResult: Option[FetchResult] = None
   var onlineFeatures: Option[RDD[(String, Vector)]] = None
   var batchTrainerModel: Option[Transformer] = None
   var onlineTrainerModel: Option[LogisticRegressionModel] = None
 
   def receive = LoggingReceive {
-
-    case fr: FetchResult =>
-      fetchResult = Some(fr)
-      transform
 
     case OnlineFeatures(features) =>
       log.debug(s"Received online model features: $features")
@@ -101,17 +130,20 @@ class TrainingModelResponseHandler(onlineTrainer: ActorRef, batchTrainer: ActorR
       log.debug(s"Received online trainer model: $model")
       transform
 
+    case TrainingModelRetrievalTimeout =>
+      log.debug(s"Timeout occurred")
+      sendResponseAndShutdown(TrainingModelRetrievalTimeout)
   }
 
-  def transform = (fetchResult, onlineFeatures, batchTrainerModel, onlineTrainerModel) match {
+  def transform = (onlineFeatures, batchTrainerModel, onlineTrainerModel) match {
 
-    case (Some(fetchR), Some(onlineF), Some(batchM), Some(onlineM)) =>
+    case (Some(onlineF), Some(batchM), Some(onlineM)) =>
       log.debug(s"Values received for online and batch training models")
       timeoutMessenger.cancel
 
       val batchModelResult =
                 batchM
-                  .transform(fetchR.tweets.map(t => Point(t, Tweet(t).tokens.toSeq)).toDF())
+                  .transform(fetchResponse.tweets.map(t => Point(t, Tweet(t).tokens.toSeq)).toDF())
                   .select("tweet","prediction")
                   .collect()
                   .map { case Row(tweet: String, prediction: Double) =>
@@ -137,7 +169,7 @@ class TrainingModelResponseHandler(onlineTrainer: ActorRef, batchTrainer: ActorR
 
     import context.dispatcher
 
-    val timeoutMessenger = context.system.scheduler.scheduleOnce(250 millisecond) {
+    val timeoutMessenger = context.system.scheduler.scheduleOnce(5 seconds) {
       self ! TrainingModelRetrievalTimeout
     }
 }
