@@ -1,6 +1,6 @@
 package actors
 
-import actors.Messages.Subscribe
+import actors.Messages.{Unsubscribe, Subscribe}
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.event.LoggingReceive
 
@@ -24,6 +24,10 @@ class EventServer extends Actor with ActorLogging {
     case Subscribe =>
       context.watch(sender)
       clients += sender
+
+    case Unsubscribe =>
+      context.unwatch(sender)
+      clients -= sender
 
   }
 
