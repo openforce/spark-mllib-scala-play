@@ -87,18 +87,18 @@ class TrainingModelResponseHandler(onlineTrainer: ActorRef, batchTrainer: ActorR
       transform
 
     case OnlineFeatures(features) =>
-      log.info(s"Received online model features: $features")
+      log.debug(s"Received online model features: $features")
       onlineFeatures = features
       transform
 
     case BatchTrainerModel(model) =>
-      log.info(s"Received batch trainer model: $model")
+      log.debug(s"Received batch trainer model: $model")
       batchTrainerModel = model
       transform
 
     case OnlineTrainerModel(model) =>
       onlineTrainerModel = model
-      log.info(s"Received online trainer model: $model")
+      log.debug(s"Received online trainer model: $model")
       transform
 
   }
@@ -106,8 +106,8 @@ class TrainingModelResponseHandler(onlineTrainer: ActorRef, batchTrainer: ActorR
   def transform = (fetchResult, onlineFeatures, batchTrainerModel, onlineTrainerModel) match {
 
     case (Some(fetchR), Some(onlineF), Some(batchM), Some(onlineM)) =>
-      log.info(s"Values received for both training models")
-      timeoutMessenger.cancel // TODO
+      log.debug(s"Values received for online and batch training models")
+      timeoutMessenger.cancel
 
       val batchModelResult =
                 batchM
@@ -131,7 +131,7 @@ class TrainingModelResponseHandler(onlineTrainer: ActorRef, batchTrainer: ActorR
 
     def sendResponseAndShutdown(response: Any) = {
       originalSender ! response
-      log.info(s"Stopping context capturing actor")
+      log.debug(s"Stopping context capturing actor")
       context.stop(self)
     }
 

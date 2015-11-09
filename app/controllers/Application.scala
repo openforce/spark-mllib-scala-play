@@ -10,6 +10,7 @@ import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.pattern._
 import akka.util.Timeout
 import org.apache.spark.SparkContext
+import play.api.Logger
 import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json.Json
@@ -22,10 +23,11 @@ import scala.concurrent.duration._
 @Singleton
 class Application @Inject() (system: ActorSystem, sparkContext: SparkContext) extends Controller {
 
+  val log = Logger(this.getClass)
   val eventServer = system.actorOf(EventServer.props)
   val receptionist = system.actorOf(Receptionist.props(sparkContext, eventServer), "receptionist")
 
-  implicit val timeout = Timeout(10.minutes)
+  implicit val timeout = Timeout(5 seconds)
   implicit val formats = Json.format[LabeledTweet]
 
   def classify(keyword: String) = Action.async {
@@ -40,6 +42,7 @@ class Application @Inject() (system: ActorSystem, sparkContext: SparkContext) ex
   }
 
   def socket = WebSocket.acceptWithActor[String, String] { request => out =>
+    log.debug(s"Client connected to socket")
     EventListener.props(out)
   }
 

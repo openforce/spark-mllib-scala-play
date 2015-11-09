@@ -1,7 +1,6 @@
 package actors
 
-import actors.Receptionist.GetClassifier
-import akka.actor.{ActorRef, Props, Actor}
+import akka.actor.{Actor, ActorRef, Props}
 import org.apache.spark.SparkContext
 import play.api.Logger
 import play.api.Play.{configuration, current}
@@ -30,10 +29,10 @@ class Receptionist(sparkContext: SparkContext, eventServer: ActorRef) extends Ac
   override def receive = {
 
     case GetClassifier => {
-      log.info(s"Get classifier")
+      log.debug(s"Received GetClassifier message")
       sender ! classifier
     }
-    case undefined => log.info(s"Unexpected message $undefined")
+    case undefined => log.warn(s"Unexpected message $undefined")
   }
 
 }

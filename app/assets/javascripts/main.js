@@ -39,7 +39,7 @@
             throw new Error(error);
         });
         wsElement.addEventListener('onopen', function () {
-            wsElement.send('Establish connection');
+            console.log('Establish connection');
         });
         wsElement.addEventListener('onmessage', function (message) {
             // hello from the server
