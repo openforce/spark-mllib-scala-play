@@ -1,6 +1,7 @@
 package actors
 
-import akka.actor.{Actor, ActorLogging, Props}
+import actors.Receptionist.TrainingFinished
+import akka.actor.{ActorRef, Actor, ActorLogging, Props}
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator
@@ -16,7 +17,7 @@ import twitter.{LabeledTweet, Tweet}
 
 object BatchTrainer {
 
-  def props(sparkContext: SparkContext) = Props(new BatchTrainer(sparkContext))
+  def props(sparkContext: SparkContext, receptionist: ActorRef) = Props(new BatchTrainer(sparkContext, receptionist: ActorRef))
 
   var corpus: RDD[Tweet] = _
 
@@ -31,7 +32,7 @@ object BatchTrainer {
   case class BatchFeatures(features: Option[RDD[(String, Vector)]])
 }
 
-class BatchTrainer(sparkContext: SparkContext) extends Actor with ActorLogging {
+class BatchTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends Actor with ActorLogging {
 
   import BatchTrainer._
 
@@ -62,9 +63,11 @@ class BatchTrainer(sparkContext: SparkContext) extends Actor with ActorLogging {
         .setEstimator(pipeline)
         .setEvaluator(new BinaryClassificationEvaluator)
         .setEstimatorParamMaps(paramGrid)
-        .setNumFolds(10)
+        .setNumFolds(2)
       model = cv.fit(data).bestModel
       log.info("Batch training finished")
+
+      receptionist ! TrainingFinished
 
     case GetLatestModel =>
       log.debug(s"Received GetLatestModel message")
