@@ -5,7 +5,7 @@ import actors.Classifier._
 import actors.FetchResponseHandler.FetchResponseTimeout
 import actors.OnlineTrainer.{OnlineFeatures, OnlineTrainerModel}
 import actors.TwitterHandler.{Fetch, FetchResponse}
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor._
 import akka.event.LoggingReceive
 import akka.util.Timeout
 import org.apache.spark.SparkContext
@@ -47,14 +47,12 @@ class Classifier(sparkContext: SparkContext, twitterHandler: ActorRef, onlineTra
       log.info(s"Start classifying tweets for token '$token'")
       val originalSender = sender
 
-      val handler = context.actorOf(FetchResponseHandler.props(onlineTrainer, batchTrainer, originalSender, sparkContext)/*, "cameo-message-handler"*/)
-
+      val handler = context.actorOf(FetchResponseHandler.props(onlineTrainer, batchTrainer, originalSender, sparkContext), "fetch-response-message-handler")
       log.debug(s"Created handler $handler")
 
       twitterHandler.tell(Fetch(token), handler)
   }
 }
-
 
 object FetchResponseHandler {
 
@@ -72,20 +70,21 @@ class FetchResponseHandler(onlineTrainer: ActorRef, batchTrainer: ActorRef, orig
     case fetchResponse: FetchResponse =>
       timeoutMessenger.cancel()
 
-      val handler = context.actorOf(TrainingModelResponseHandler.props(fetchResponse, originalSender, sparkContext)/*, "cameo-message-handler"*/)
+      val handler = context.actorOf(TrainingModelResponseHandler.props(fetchResponse, originalSender, sparkContext), "training-model-response-message-handler")
+      log.debug(s"Created handler $handler")
+
       onlineTrainer.tell(GetFeatures(fetchResponse), handler)
       onlineTrainer.tell(GetLatestModel, handler)
       batchTrainer.tell(GetLatestModel, handler)
+      context.watch(handler)
+
+    case t: Terminated =>
+      log.debug(s"Received Terminated message for training model response handler $t")
+      context.stop(self)
 
     case FetchResponseTimeout =>
       log.debug("Timeout occurred")
-      sendResponseAndShutdown(FetchResponseTimeout)
-  }
-
-  def sendResponseAndShutdown(response: Any) = {
-    originalSender ! response
-    log.debug(s"Stopping context capturing actor")
-    context.stop(self)
+      context.stop(self)
   }
 
   import context.dispatcher
@@ -163,7 +162,7 @@ class TrainingModelResponseHandler(fetchResponse: FetchResponse, originalSender:
 
     def sendResponseAndShutdown(response: Any) = {
       originalSender ! response
-      log.debug(s"Stopping context capturing actor")
+      log.debug(s"Stopping context capturing actor $self")
       context.stop(self)
     }
 
