@@ -1,6 +1,7 @@
 package actors
 
 import akka.actor.{Actor, ActorRef, Props}
+import classifiers.Estimator
 import org.apache.spark.SparkContext
 import play.api.Logger
 import play.api.Play.{configuration, current}
@@ -23,7 +24,8 @@ class Receptionist(sparkContext: SparkContext, eventServer: ActorRef) extends Ac
   val twitterHandler = context.actorOf(TwitterHandler.props(sparkContext), "twitter-handler")
   val onlineTrainer = context.actorOf(OnlineTrainer.props(sparkContext), "online-trainer")
   val batchTrainer = context.actorOf(BatchTrainer.props(sparkContext), "batch-trainer")
-  val classifier = context.actorOf(Classifier.props(sparkContext, twitterHandler, onlineTrainer, batchTrainer, eventServer), "classifier")
+  val estimator = new Estimator(sparkContext)
+  val classifier = context.actorOf(Classifier.props(sparkContext, twitterHandler, onlineTrainer, batchTrainer, eventServer, estimator), "classifier")
   context.actorOf(CorpusInitializer.props(sparkContext, batchTrainer, onlineTrainer, eventServer), "corpus-initializer")
 
   override def receive = {

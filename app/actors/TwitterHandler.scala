@@ -36,7 +36,9 @@ object TwitterHandler {
 
 }
 
-class TwitterHandler(sparkContext: SparkContext, configuration: Configuration) extends Actor {
+trait TwitterHandlerProxy extends Actor
+
+class TwitterHandler(sparkContext: SparkContext, configuration: Configuration) extends Actor with TwitterHandlerProxy {
 
   val log = Logger(this.getClass)
 

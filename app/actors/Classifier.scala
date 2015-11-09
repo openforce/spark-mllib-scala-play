@@ -8,20 +8,21 @@ import actors.TwitterHandler.{Fetch, FetchResponse}
 import akka.actor._
 import akka.event.LoggingReceive
 import akka.util.Timeout
+import classifiers.EstimatorProxy
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.{PipelineModel, Transformer}
 import org.apache.spark.mllib.classification.LogisticRegressionModel
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Row, SQLContext}
-import twitter.{LabeledTweet, Tweet}
+import org.apache.spark.sql.SQLContext
+import twitter.LabeledTweet
 
 import scala.concurrent.duration._
 
 object Classifier {
 
-  def props(sparkContext: SparkContext, twitterHandler: ActorRef, onlineTrainer: ActorRef, batchTrainer: ActorRef, eventServer: ActorRef) =
-    Props(new Classifier(sparkContext, twitterHandler, onlineTrainer, batchTrainer, eventServer))
+  def props(sparkContext: SparkContext, twitterHandler: ActorRef, onlineTrainer: ActorRef, batchTrainer: ActorRef, eventServer: ActorRef, estimator: EstimatorProxy) =
+    Props(new Classifier(sparkContext, twitterHandler, onlineTrainer, batchTrainer, eventServer, estimator))
 
   case class Classify(token: String)
 
@@ -33,7 +34,7 @@ object Classifier {
 
 }
 
-class Classifier(sparkContext: SparkContext, twitterHandler: ActorRef, onlineTrainer: ActorRef, batchTrainer: ActorRef, eventServer: ActorRef) extends Actor with ActorLogging {
+class Classifier(sparkContext: SparkContext, twitterHandler: ActorRef, onlineTrainer: ActorRef, batchTrainer: ActorRef, eventServer: ActorRef, estimator: EstimatorProxy) extends Actor with ActorLogging {
 
   val sqlContext = new SQLContext(sparkContext)
 
@@ -47,7 +48,7 @@ class Classifier(sparkContext: SparkContext, twitterHandler: ActorRef, onlineTra
       log.info(s"Start classifying tweets for token '$token'")
       val originalSender = sender
 
-      val handler = context.actorOf(FetchResponseHandler.props(onlineTrainer, batchTrainer, originalSender, sparkContext), "fetch-response-message-handler")
+      val handler = context.actorOf(FetchResponseHandler.props(onlineTrainer, batchTrainer, originalSender, sparkContext, estimator), "fetch-response-message-handler")
       log.debug(s"Created handler $handler")
 
       twitterHandler.tell(Fetch(token), handler)
@@ -58,11 +59,11 @@ object FetchResponseHandler {
 
   case object FetchResponseTimeout
 
-  def props(onlineTrainer: ActorRef, batchTrainer: ActorRef, originalSender: ActorRef, sparkContext: SparkContext) =
-    Props(new FetchResponseHandler(onlineTrainer, batchTrainer, originalSender, sparkContext))
+  def props(onlineTrainer: ActorRef, batchTrainer: ActorRef, originalSender: ActorRef, sparkContext: SparkContext, estimator: EstimatorProxy) =
+    Props(new FetchResponseHandler(onlineTrainer, batchTrainer, originalSender, sparkContext, estimator))
 }
 
-class FetchResponseHandler(onlineTrainer: ActorRef, batchTrainer: ActorRef, originalSender: ActorRef, sparkContext: SparkContext) extends Actor with ActorLogging {
+class FetchResponseHandler(onlineTrainer: ActorRef, batchTrainer: ActorRef, originalSender: ActorRef, sparkContext: SparkContext, estimator: EstimatorProxy) extends Actor with ActorLogging {
 
 
   def receive = LoggingReceive {
@@ -70,7 +71,7 @@ class FetchResponseHandler(onlineTrainer: ActorRef, batchTrainer: ActorRef, orig
     case fetchResponse: FetchResponse =>
       timeoutMessenger.cancel()
 
-      val handler = context.actorOf(TrainingModelResponseHandler.props(fetchResponse, originalSender, sparkContext), "training-model-response-message-handler")
+      val handler = context.actorOf(TrainingModelResponseHandler.props(fetchResponse, originalSender, sparkContext, estimator), "training-model-response-message-handler")
       log.debug(s"Created handler $handler")
 
       onlineTrainer.tell(GetFeatures(fetchResponse), handler)
@@ -98,15 +99,14 @@ object TrainingModelResponseHandler {
 
   case object TrainingModelRetrievalTimeout
 
-  def props(fetchResponse: FetchResponse,originalSender: ActorRef, sparkContext: SparkContext) =
-    Props(new TrainingModelResponseHandler(fetchResponse, originalSender, sparkContext))
+  def props(fetchResponse: FetchResponse,originalSender: ActorRef, sparkContext: SparkContext, estimator: EstimatorProxy) =
+    Props(new TrainingModelResponseHandler(fetchResponse, originalSender, sparkContext, estimator))
 }
 
-class TrainingModelResponseHandler(fetchResponse: FetchResponse, originalSender: ActorRef, sparkContext: SparkContext) extends Actor with ActorLogging {
+class TrainingModelResponseHandler(fetchResponse: FetchResponse, originalSender: ActorRef, sparkContext: SparkContext, estimator: EstimatorProxy) extends Actor with ActorLogging {
 
   import TrainingModelResponseHandler._
   val sqlContext = new SQLContext(sparkContext)
-  import sqlContext.implicits._
 
   var onlineFeatures: Option[RDD[(String, Vector)]] = None
   var batchTrainerModel: Option[Transformer] = None
@@ -140,20 +140,8 @@ class TrainingModelResponseHandler(fetchResponse: FetchResponse, originalSender:
       log.debug(s"Values received for online and batch training models")
       timeoutMessenger.cancel
 
-      val batchModelResult =
-                batchM
-                  .transform(fetchResponse.tweets.map(t => Point(t, Tweet(t).tokens.toSeq)).toDF())
-                  .select("tweet","prediction")
-                  .collect()
-                  .map { case Row(tweet: String, prediction: Double) =>
-                    LabeledTweet(tweet, prediction.toString)
-                  }
-
-      val onlineModelResult =
-              onlineF.map { case (tweet, vector) =>
-                LabeledTweet(tweet, onlineM.predict(vector).toString)
-              }.collect()
-
+      val batchModelResult = estimator.predict(batchM, fetchResponse)
+      val onlineModelResult = estimator.predict(onlineM, onlineF)
 
       sendResponseAndShutdown(ClassificationResult(batchModelResult, onlineModelResult))
 

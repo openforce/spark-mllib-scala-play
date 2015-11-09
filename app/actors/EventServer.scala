@@ -11,7 +11,9 @@ object EventServer {
   case object Subscribe
 }
 
-class EventServer extends Actor with ActorLogging {
+trait EventServerProxy extends Actor
+
+class EventServer extends Actor with ActorLogging with EventServerProxy {
 
   var clients = Set.empty[ActorRef]
 

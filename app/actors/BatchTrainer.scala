@@ -31,7 +31,9 @@ object BatchTrainer {
   case class BatchFeatures(features: Option[RDD[(String, Vector)]])
 }
 
-class BatchTrainer(sparkContext: SparkContext) extends Actor with ActorLogging {
+trait BatchTrainerProxy extends Actor
+
+class BatchTrainer(sparkContext: SparkContext) extends Actor with ActorLogging with BatchTrainerProxy {
 
   import BatchTrainer._
 

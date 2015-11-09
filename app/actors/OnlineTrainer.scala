@@ -10,7 +10,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.streaming.twitter.TwitterUtils
 import org.apache.spark.streaming.{Duration, StreamingContext}
-import play.api.Logger
 import play.api.Play.{configuration, current}
 import twitter.Tweet
 import twitter4j.auth.OAuthAuthorization
@@ -33,7 +32,9 @@ object OnlineTrainer extends TfIdf {
   case class OnlineFeatures(features: Option[RDD[(String, Vector)]])
 }
 
-class OnlineTrainer(sparkContext: SparkContext) extends Actor with ActorLogging {
+trait OnlineTrainerProxy extends Actor
+
+class OnlineTrainer(sparkContext: SparkContext) extends Actor with ActorLogging with OnlineTrainerProxy {
 
   import OnlineTrainer._
 
@@ -64,9 +65,9 @@ class OnlineTrainer(sparkContext: SparkContext) extends Actor with ActorLogging 
       logisticRegression.trainOn(stream)
       ssc.start()
 
-    case GetFeatures(fetchResult) =>
+    case GetFeatures(fetchResponse) =>
       log.debug(s"Received GetFeatures message")
-      val rdd: RDD[String] = sparkContext.parallelize(fetchResult.tweets)
+      val rdd: RDD[String] = sparkContext.parallelize(fetchResponse.tweets)
       rdd.cache()
       val features = rdd map { t => (t, tfidf(Tweet(t).tokens)) }
       sender ! OnlineFeatures(Some(features))
