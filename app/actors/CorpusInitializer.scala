@@ -15,8 +15,8 @@ import util.SentimentIdentifier._
 
 object CorpusInitializer {
 
-  def props(sparkContext: SparkContext, batchTrainer: ActorRef, onlineTrainer: ActorRef, eventServer: ActorRef) =
-    Props(new CorpusInitializer(sparkContext, batchTrainer, onlineTrainer, eventServer))
+  def props(sparkContext: SparkContext, batchTrainer: ActorRef, onlineTrainer: ActorRef, eventServer: ActorRef, statisticsServer: ActorRef) =
+    Props(new CorpusInitializer(sparkContext, batchTrainer, onlineTrainer, eventServer, statisticsServer))
 
   case object InitFromStream
 
@@ -30,7 +30,7 @@ object CorpusInitializer {
 
 }
 
-class CorpusInitializer(sparkContext: SparkContext, batchTrainer: ActorRef, onlineTrainer: ActorRef, eventServer: ActorRef) extends Actor with ActorLogging {
+class CorpusInitializer(sparkContext: SparkContext, batchTrainer: ActorRef, onlineTrainer: ActorRef, eventServer: ActorRef, statisticsServer: ActorRef) extends Actor with ActorLogging {
 
   import CorpusInitializer._
 
@@ -67,6 +67,7 @@ class CorpusInitializer(sparkContext: SparkContext, batchTrainer: ActorRef, onli
       batchTrainer ! trainMessage
       onlineTrainer ! trainMessage
       context.stop(self)
+      statisticsServer ! (posTweets ++ negTweets)
       eventServer ! "Corpus initialization finished"
     }
 

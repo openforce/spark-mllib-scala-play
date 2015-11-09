@@ -1,6 +1,5 @@
 package actors
 
-import actors.EventServer.Subscribe
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.event.LoggingReceive
 
@@ -8,7 +7,6 @@ object EventServer {
 
   def props = Props[EventServer]
 
-  case object Subscribe
 }
 
 trait EventServerProxy extends Actor
@@ -27,6 +25,10 @@ class EventServer extends Actor with ActorLogging with EventServerProxy {
     case Subscribe =>
       context.watch(sender)
       clients += sender
+
+    case Unsubscribe =>
+      context.unwatch(sender)
+      clients -= sender
 
   }
 

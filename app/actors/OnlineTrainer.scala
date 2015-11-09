@@ -1,6 +1,7 @@
 package actors
 
-import akka.actor.{ActorLogging, Actor, Props}
+import actors.Receptionist.TrainingFinished
+import akka.actor.{ActorRef, ActorLogging, Actor, Props}
 import features.TfIdf
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.classification.{LogisticRegressionModel, StreamingLogisticRegressionWithSGD}
@@ -17,7 +18,7 @@ import util.SentimentIdentifier
 
 object OnlineTrainer extends TfIdf {
 
-  def props(sparkContext: SparkContext) = Props(new OnlineTrainer(sparkContext))
+  def props(sparkContext: SparkContext, receptionist: ActorRef) = Props(new OnlineTrainer(sparkContext, receptionist: ActorRef))
 
   var logisticRegression: StreamingLogisticRegressionWithSGD = _
 
@@ -34,7 +35,7 @@ object OnlineTrainer extends TfIdf {
 
 trait OnlineTrainerProxy extends Actor
 
-class OnlineTrainer(sparkContext: SparkContext) extends Actor with ActorLogging with OnlineTrainerProxy {
+class OnlineTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends Actor with ActorLogging with OnlineTrainerProxy {
 
   import OnlineTrainer._
 
@@ -64,6 +65,7 @@ class OnlineTrainer(sparkContext: SparkContext) extends Actor with ActorLogging 
         .map(tweet => tweet.toLabeledPoint { _ => tf(tweet.tokens)})
       logisticRegression.trainOn(stream)
       ssc.start()
+      receptionist ! TrainingFinished
 
     case GetFeatures(fetchResponse) =>
       log.debug(s"Received GetFeatures message")

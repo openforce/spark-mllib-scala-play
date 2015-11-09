@@ -10,4 +10,8 @@ package object actors {
 
   case class GetFeatures(fetchResult: FetchResponse)
 
+  case object Subscribe
+
+  case object Unsubscribe
+
 }

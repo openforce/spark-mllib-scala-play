@@ -1,15 +1,14 @@
 package actors
 
 import actors.BatchTrainer.BatchTrainerModel
-import actors.EventServer.Subscribe
 import actors.OnlineTrainer._
 import actors.TwitterHandler.{Fetch, FetchResponse}
 import akka.actor.ActorLogging
 import classifiers.EstimatorProxy
 import org.apache.spark.ml.Transformer
 import org.apache.spark.mllib.classification.LogisticRegressionModel
-import org.apache.spark.rdd.RDD
 import org.apache.spark.mllib.linalg.Vector
+import org.apache.spark.rdd.RDD
 import twitter.LabeledTweet
 
 class TwitterHandlerProxyStub extends TwitterHandlerProxy with ActorLogging {
