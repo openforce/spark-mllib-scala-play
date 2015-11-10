@@ -1,7 +1,13 @@
-@main(title = "Twitter sentiment analysis", subtitle = "Done with Spark, MLlib, Scala and Play!") {
+@main(title = "Twitter Sentiment Analysis", subtitle = "Powered by Spark, MLlib, Scala, Akka and Play!") {
 
     <div class="overlay">
+
+      <div class="chart-container">
+        <div class="chart"></div>
+      </div>
+
         <form class="search-box">
+
             <h3>Enter a keyword</h3>
             <p>
                 The keyword you enter will be used to search twitter for tweets.
@@ -9,7 +15,7 @@
             </p>
 
             <paper-toast id="event-toast"></paper-toast>
-            <event-log></event-log>
+            <!--<event-log></event-log>-->
 
             <ws-element id="socket" url="ws://localhost:9000/socket"></ws-element>
             <ws-element id="statisticsSocket" url="ws://localhost:9000/statisticsSocket"></ws-element>
@@ -23,14 +29,14 @@
             </div>
         </form>
 
+
+
         <div class="card-container">
             <twitter-cardlist>
             </twitter-cardlist>
         </div>
     </div>
 
-    <div class="chart-container">
-        <div class="chart"></div>
-    </div>
+
 
 }

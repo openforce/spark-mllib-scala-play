@@ -8,8 +8,6 @@ export class Chart {
         this.totalPoints = 300;
         this.data = [];
 
-        $('.chart-container, .overlay').height(window.innerHeight);
-
         window.plot = this.plot = $.plot(".chart", [ this.data ], {
             series: {
                 shadowSize: 0	// Drawing is faster without shadows
