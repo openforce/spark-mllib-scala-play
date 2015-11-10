@@ -8,7 +8,7 @@ package object actors {
 
   case class Train(corpus: RDD[Tweet])
 
-  case class GetFeatures(fetchResult: FetchResponse)
+  case class GetFeatures(fetchResponse: FetchResponse)
 
   case object Subscribe
 

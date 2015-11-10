@@ -1,11 +1,10 @@
 package actors
 
-import actors.Receptionist.TrainingFinished
-import akka.actor.{ActorRef, ActorLogging, Actor, Props}
+import actors.Receptionist.OnlineTrainingFinished
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import features.TfIdf
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.classification.{LogisticRegressionModel, StreamingLogisticRegressionWithSGD}
-import org.apache.spark.mllib.evaluation.{BinaryClassificationMetrics, MulticlassMetrics}
 import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
@@ -62,7 +61,7 @@ class OnlineTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends 
         .map(tweet => tweet.toLabeledPoint { _ => tf(tweet.tokens)})
       logisticRegression.trainOn(stream)
       ssc.start()
-      receptionist ! TrainingFinished
+      receptionist ! OnlineTrainingFinished
 
     case GetFeatures(fetchResponse) =>
       log.debug(s"Received GetFeatures message")

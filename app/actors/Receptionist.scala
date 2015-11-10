@@ -18,7 +18,8 @@ object Receptionist {
 
   case object GetClassifier
 
-  case object TrainingFinished
+  case object OnlineTrainingFinished
+  case object BatchTrainingFinished
 
   val trainOnline = configuration.getBoolean("ml.trainer.online").getOrElse(false)
 
@@ -37,29 +38,33 @@ class Receptionist(sparkContext: SparkContext, eventServer: ActorRef, statistics
   val classifier = context.actorOf(Classifier.props(sparkContext, twitterHandler, onlineTrainer, batchTrainer, eventServer, estimator), "classifier")
   context.actorOf(CorpusInitializer.props(sparkContext, batchTrainer, onlineTrainer, eventServer, statisticsServer), "corpus-initializer")
 
-  var trainersFinished: Int = 0
+  var batchTrainerFinished = false
+  var onlineTrainingFinished = false
 
   override def receive = {
 
     case GetClassifier => sender ! classifier
 
-    case TrainingFinished => {
-      trainersFinished += 1
+    case BatchTrainingFinished =>
+      batchTrainerFinished = true
+      collectStatistics
 
-      // if both the batch trainer and the online trainer are done with the initial training phase
-      if (trainersFinished == 2) {
-        context.system.scheduler.schedule(0 seconds, 5 seconds)({
-          batchTrainer ! GetLatestModel
-          onlineTrainer ! GetLatestModel
-        })
-      }
-    }
+    case OnlineTrainingFinished =>
+      onlineTrainingFinished = true
+      collectStatistics
 
-    case m: OnlineTrainerModel  => statisticsServer ! m
+    case m: OnlineTrainerModel => statisticsServer ! m
 
     case m: BatchTrainerModel => statisticsServer ! m
 
     case undefined => log.info(s"Unexpected message $undefined")
   }
+
+  def collectStatistics =
+    if(batchTrainerFinished && onlineTrainingFinished)
+      context.system.scheduler.schedule(0 seconds, 5 seconds) {
+        batchTrainer ! GetLatestModel
+        onlineTrainer ! GetLatestModel
+      }
 
 }

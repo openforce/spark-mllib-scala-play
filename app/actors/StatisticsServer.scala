@@ -1,6 +1,7 @@
 package actors
 
 import actors.BatchTrainer.BatchTrainerModel
+import actors.Classifier.ClassificationResult
 import actors.OnlineTrainer.OnlineTrainerModel
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.event.LoggingReceive
