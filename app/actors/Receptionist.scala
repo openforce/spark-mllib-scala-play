@@ -48,10 +48,10 @@ class Receptionist(sparkContext: SparkContext, eventServer: ActorRef, statistics
 
       // if both the batch trainer and the online trainer are done with the initial training phase
       if (trainersFinished == 2) {
-//        context.system.scheduler.schedule(0 seconds, 1 seconds)({
-//          batchTrainer ! GetLatestModel
-//          onlineTrainer ! GetLatestModel
-//        })
+        context.system.scheduler.schedule(0 seconds, 5 seconds)({
+          batchTrainer ! GetLatestModel
+          onlineTrainer ! GetLatestModel
+        })
       }
     }
 

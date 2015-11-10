@@ -22,8 +22,6 @@ object OnlineTrainer extends TfIdf {
 
   var logisticRegression: StreamingLogisticRegressionWithSGD = _
 
-  var corpus: RDD[Tweet] = _
-
   val dumpCorpus = configuration.getBoolean("ml.corpus.dump").getOrElse(false)
 
   val dumpPath = configuration.getString("ml.corpus.path").getOrElse("")
@@ -49,9 +47,8 @@ class OnlineTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends 
 
   override def receive = {
 
-    case Train(tweets) =>
+    case Train(corpus) =>
       log.debug(s"Received Train message with tweets corpus")
-      corpus = tweets
       if (dumpCorpus) corpus.map(t => (t.tokens.toSeq, t.sentiment)).toDF().write.parquet(dumpPath)
       train(corpus)
       logisticRegression = new StreamingLogisticRegressionWithSGD()
@@ -78,23 +75,7 @@ class OnlineTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends 
       log.debug(s"Received GetLatestModel message")
       val lr = logisticRegression.latestModel()
       sender ! OnlineTrainerModel(Some(lr))
-      testOn(lr)
 
-  }
-
-  private def testOn(model: LogisticRegressionModel): Unit = {
-    val scoreAndLabels = corpus map { tweet => (model.predict(tfidf(tweet.tokens)), tweet.sentiment) }
-    val total: Double = scoreAndLabels.count()
-    val metrics = new BinaryClassificationMetrics(scoreAndLabels)
-    log.info(s"Current model: ${model.toString()}")
-    log.info(s"Area under the ROC curve: ${metrics.areaUnderROC()}")
-    val correct: Double = scoreAndLabels.map { case ((score, label)) => if (score == label) 1 else 0 }.reduce(_+_)
-    val accuracy = correct / total
-    log.info(s"Accuracy: $accuracy ($correct of $total)")
-    val mc = new MulticlassMetrics(scoreAndLabels)
-    log.info(s"Precision: ${mc.precision}")
-    log.info(s"Recall: ${mc.recall}")
-    log.info(s"F-Measure: ${mc.fMeasure}")
   }
 
 }

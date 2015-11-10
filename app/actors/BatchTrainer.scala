@@ -19,10 +19,6 @@ object BatchTrainer {
 
   def props(sparkContext: SparkContext, receptionist: ActorRef) = Props(new BatchTrainer(sparkContext, receptionist: ActorRef))
 
-  var corpus: RDD[Tweet] = _
-
-  var model: Transformer = _
-
   val dumpCorpus = configuration.getBoolean("ml.corpus.dump").getOrElse(false)
 
   val dumpPath = configuration.getString("ml.corpus.path").getOrElse("")
@@ -30,6 +26,7 @@ object BatchTrainer {
   case class BatchTrainerModel(model: Option[Transformer])
 
   case class BatchFeatures(features: Option[RDD[(String, Vector)]])
+
 }
 
 trait BatchTrainerProxy extends Actor
@@ -38,11 +35,11 @@ class BatchTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends A
 
   import BatchTrainer._
 
+  var model: Transformer = _
+
   val sqlContext = new SQLContext(sparkContext)
 
   import sqlContext.implicits._
-
-  var corpus: RDD[LabeledTweet] = sparkContext.emptyRDD[LabeledTweet]
 
   override def receive = {
 

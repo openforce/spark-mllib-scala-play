@@ -6,7 +6,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.event.LoggingReceive
 import features.TfIdf
 import org.apache.spark.SparkContext
-import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
+import org.apache.spark.mllib.evaluation.{MulticlassMetrics, BinaryClassificationMetrics}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 import play.api.libs.json.{JsValue, Json}
@@ -44,6 +44,7 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
     case c: RDD[Tweet] => {
       corpus = c
 
+      train(corpus)
       dfCorpus = c.map(t => {
         (t.tokens.toSeq, t.sentiment)
       }).toDF("tokens", "label")
@@ -71,6 +72,14 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
 
       val statistics = new Statistics(metrics.areaUnderROC(), accuracy)
 
+      log.info(s"Current model: ${model.toString()}")
+      log.info(s"Area under the ROC curve: ${metrics.areaUnderROC()}")
+      log.info(s"Accuracy: $accuracy ($correct of $total)")
+      val mc = new MulticlassMetrics(scoreAndLabels)
+      log.info(s"Precision: ${mc.precision}")
+      log.info(s"Recall: ${mc.recall}")
+      log.info(s"F-Measure: ${mc.fMeasure}")
+
       sendMessage(Json.toJson(statistics))
     })
   }
@@ -95,9 +104,10 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
         total += 1
       }
 
-      val precision = correct / total
+      val accuracy = correct / total
+      log.info(s"Batch accuracy: ${accuracy}")
 
-      sendMessage(Json.toJson(new Statistics(0.0, precision)))
+      sendMessage(Json.toJson(new Statistics(0.0, accuracy)))
     })
   }
 

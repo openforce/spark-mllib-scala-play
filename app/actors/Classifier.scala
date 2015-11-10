@@ -117,24 +117,24 @@ class TrainingModelResponseHandler(fetchResponse: FetchResponse, originalSender:
     case OnlineFeatures(features) =>
       log.debug(s"Received online model features: $features")
       onlineFeatures = features
-      transform
+      predict
 
     case BatchTrainerModel(model) =>
       log.debug(s"Received batch trainer model: $model")
       batchTrainerModel = model
-      transform
+      predict
 
     case OnlineTrainerModel(model) =>
       onlineTrainerModel = model
       log.debug(s"Received online trainer model: $model")
-      transform
+      predict
 
     case TrainingModelRetrievalTimeout =>
       log.debug(s"Timeout occurred")
       sendResponseAndShutdown(TrainingModelRetrievalTimeout)
   }
 
-  def transform = (onlineFeatures, batchTrainerModel, onlineTrainerModel) match {
+  def predict = (onlineFeatures, batchTrainerModel, onlineTrainerModel) match {
 
     case (Some(onlineF), Some(batchM), Some(onlineM)) =>
       log.debug(s"Values received for online and batch training models")
