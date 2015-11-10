@@ -7,16 +7,16 @@ object EventListener {
   def props(out: ActorRef, eventServer: ActorRef) = Props(new EventListener(out, eventServer))
 }
 
-class EventListener(out: ActorRef, actor: ActorRef) extends Actor {
+class EventListener(out: ActorRef, eventServer: ActorRef) extends Actor {
 
   override def preStart() = {
-    actor ! Subscribe
+    eventServer ! Subscribe
   }
 
   override def postStop(): Unit = {
     super.postStop()
 
-    actor ! Unsubscribe
+    eventServer ! Unsubscribe
   }
 
   def receive = {
