@@ -18,10 +18,6 @@ object BatchTrainer {
 
   def props(sparkContext: SparkContext, receptionist: ActorRef) = Props(new BatchTrainer(sparkContext, receptionist: ActorRef))
 
-  val dumpCorpus = configuration.getBoolean("ml.corpus.dump").getOrElse(false)
-
-  val dumpPath = configuration.getString("ml.corpus.path").getOrElse("")
-
   case class BatchTrainerModel(model: Option[Transformer])
 
   case class BatchFeatures(features: Option[RDD[(String, Vector)]])

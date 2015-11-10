@@ -2,7 +2,7 @@ package actors
 
 import actors.Receptionist.OnlineTrainingFinished
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import features.TfIdf
+import features.{Features, TfIdf}
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.classification.{LogisticRegressionModel, StreamingLogisticRegressionWithSGD}
 import org.apache.spark.mllib.linalg.{Vector, Vectors}
@@ -15,11 +15,9 @@ import twitter.Tweet
 import twitter4j.auth.OAuthAuthorization
 import util.SentimentIdentifier
 
-object OnlineTrainer extends TfIdf {
+object OnlineTrainer {
 
   def props(sparkContext: SparkContext, receptionist: ActorRef) = Props(new OnlineTrainer(sparkContext, receptionist: ActorRef))
-
-  var logisticRegression: StreamingLogisticRegressionWithSGD = _
 
   val dumpCorpus = configuration.getBoolean("ml.corpus.dump").getOrElse(false)
 
@@ -28,6 +26,7 @@ object OnlineTrainer extends TfIdf {
   case class OnlineTrainerModel(model: Option[LogisticRegressionModel])
 
   case class OnlineFeatures(features: Option[RDD[(String, Vector)]])
+
 }
 
 trait OnlineTrainerProxy extends Actor
@@ -42,6 +41,8 @@ class OnlineTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends 
 
   val sqlContext = new SQLContext(sparkContext)
 
+  var logisticRegression: StreamingLogisticRegressionWithSGD = _
+
   import sqlContext.implicits._
 
   override def receive = {
@@ -49,16 +50,16 @@ class OnlineTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends 
     case Train(corpus) =>
       log.debug(s"Received Train message with tweets corpus")
       if (dumpCorpus) corpus.map(t => (t.tokens.toSeq, t.sentiment)).toDF().write.parquet(dumpPath)
-      train(corpus)
+      val tfIdf = TfIdf(corpus)
       logisticRegression = new StreamingLogisticRegressionWithSGD()
         .setNumIterations(200)
-        .setInitialWeights(Vectors.zeros(coefficients))
+        .setInitialWeights(Vectors.zeros(Features.coefficients))
         .setStepSize(1.0)
       log.info(s"Start twitter stream for online training")
       val stream = TwitterUtils.createStream(ssc, twitterAuth, filters = SentimentIdentifier.sentimentEmoticons)
         .filter(t => t.getUser.getLang == "en" && !t.isRetweet)
         .map { Tweet(_) }
-        .map(tweet => tweet.toLabeledPoint { _ => tf(tweet.tokens)})
+        .map(tweet => tweet.toLabeledPoint { _ => tfIdf.tf(tweet.tokens)})
       logisticRegression.trainOn(stream)
       ssc.start()
       receptionist ! OnlineTrainingFinished
@@ -67,7 +68,7 @@ class OnlineTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends 
       log.debug(s"Received GetFeatures message")
       val rdd: RDD[String] = sparkContext.parallelize(fetchResponse.tweets)
       rdd.cache()
-      val features = rdd map { t => (t, tfidf(Tweet(t).tokens)) }
+      val features = rdd map { t => (t, TfIdf.getInstance.tfIdf(Tweet(t).tokens)) }
       sender ! OnlineFeatures(Some(features))
 
     case GetLatestModel =>

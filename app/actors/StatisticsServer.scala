@@ -4,16 +4,17 @@ import actors.BatchTrainer.BatchTrainerModel
 import actors.Classifier.ClassificationResult
 import actors.OnlineTrainer.OnlineTrainerModel
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.dispatch.sysmsg.Terminate
 import akka.event.LoggingReceive
-import features.TfIdf
+import features.{TfIdf, Features}
 import org.apache.spark.SparkContext
-import org.apache.spark.mllib.evaluation.{MulticlassMetrics, BinaryClassificationMetrics}
+import org.apache.spark.mllib.evaluation.{BinaryClassificationMetrics, MulticlassMetrics}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 import play.api.libs.json.{JsValue, Json}
 import twitter.Tweet
 
-object StatisticsServer extends TfIdf {
+object StatisticsServer {
 
   def props(sparkContext: SparkContext) = Props(new StatisticsServer(sparkContext))
 
@@ -31,8 +32,8 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
 
   val sqlContext = new SQLContext(sparkContext)
   var clients = Set.empty[ActorRef]
-  var corpus: RDD[Tweet] = _
-  var dfCorpus: DataFrame = _
+  var corpus: RDD[Tweet] = sparkContext.emptyRDD[Tweet]
+  var dfCorpus: DataFrame = sqlContext.emptyDataFrame
 
   import sqlContext.implicits._
 
@@ -45,7 +46,6 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
     case c: RDD[Tweet] => {
       corpus = c
 
-      train(corpus)
       dfCorpus = c.map(t => {
         (t.tokens.toSeq, t.sentiment)
       }).toDF("tokens", "label")
@@ -60,12 +60,12 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
     case Unsubscribe =>
       context.unwatch(sender)
       clients -= sender
-
   }
 
   private def testOnlineModel(model: OnlineTrainerModel) = {
+    val tfIdf = TfIdf(corpus)
     model.model.foreach(model => {
-      val scoreAndLabels = corpus map { tweet => (model.predict(tfidf(tweet.tokens)), tweet.sentiment) }
+      val scoreAndLabels = corpus map { tweet => (model.predict(tfIdf.tfIdf(tweet.tokens)), tweet.sentiment) }
       val total: Double = scoreAndLabels.count()
       val metrics = new BinaryClassificationMetrics(scoreAndLabels)
       val correct: Double = scoreAndLabels.filter { case ((score, label)) => score == label }.count()

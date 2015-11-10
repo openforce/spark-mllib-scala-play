@@ -39,4 +39,5 @@ class Estimator(sparkContext: SparkContext) extends EstimatorProxy {
       LabeledTweet(tweet, onlineTrainingModel.predict(vector).toString)
     } collect()
   }
+
 }

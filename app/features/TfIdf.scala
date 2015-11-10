@@ -1,29 +1,38 @@
 package features
 
-import org.apache.spark.mllib.feature.{HashingTF, IDF, IDFModel}
+import org.apache.spark.mllib.feature.{IDF, HashingTF}
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
-import play.api.Play.{configuration, current}
 import twitter.Tweet
 
-trait TfIdf {
 
-  val coefficients = configuration.getInt("ml.features.coefficients").getOrElse(1500)
+object TfIdf {
 
-  implicit val hashingTf = new HashingTF(coefficients)
+  var tfIdf: Option[TfIdf] = None
 
-  var hashingTF: RDD[Vector] = _
+  def apply(corpus: RDD[Tweet]): TfIdf =
+    tfIdf getOrElse {
+      tfIdf = Some(new TfIdf(corpus))
+      tfIdf.get
+    }
 
-  var idf: IDFModel = _
+  def getInstance: TfIdf =
+    tfIdf.getOrElse {
+      throw new IllegalStateException("TfIdf has not been initialized")
+    }
 
-  def train(corpus: RDD[Tweet]) = {
-    hashingTF = hashingTf.transform(corpus.map(_.tokens))
-    hashingTF.cache()
-    idf = new IDF().fit(hashingTF)
-  }
+}
 
-  def tf(text: Set[String]): Vector = hashingTf.transform(text)
+private[features] class TfIdf(corpus: RDD[Tweet]) extends Serializable {
 
-  def tfidf(text: Set[String]): Vector = idf.transform(hashingTf.transform(text))
+  import Features._
+
+  val tf = new HashingTF(coefficients)
+
+  val idf = new IDF().fit(tf.transform(corpus.map(_.tokens)))
+
+  def tf(text: Set[String]): Vector = tf.transform(text)
+
+  def tfIdf(text: Set[String]): Vector = idf.transform(tf.transform(text))
 
 }
