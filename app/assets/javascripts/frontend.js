@@ -34,8 +34,10 @@ export class Frontend {
         }).on('onmessage', (socket, message) => {
             var data = JSON.parse(message.detail);
 
-            //console.log(data.accuracy);
-            this.chart.push(data.accuracy);
+            console.log(data);
+            if(data.trainer == "Online") {
+              this.chart.push(data.accuracy);
+            }
         });
     }
 

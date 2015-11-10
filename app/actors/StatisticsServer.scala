@@ -1,12 +1,10 @@
 package actors
 
 import actors.BatchTrainer.BatchTrainerModel
-import actors.Classifier.ClassificationResult
 import actors.OnlineTrainer.OnlineTrainerModel
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import akka.dispatch.sysmsg.Terminate
 import akka.event.LoggingReceive
-import features.{TfIdf, Features}
+import features.TfIdf
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.evaluation.{BinaryClassificationMetrics, MulticlassMetrics}
 import org.apache.spark.rdd.RDD
@@ -18,7 +16,11 @@ object StatisticsServer {
 
   def props(sparkContext: SparkContext) = Props(new StatisticsServer(sparkContext))
 
-  case class Statistics(roc: Double, accuracy: Double)
+  object TrainerType extends Enumeration {
+    val Batch, Online = Value
+  }
+
+  case class Statistics(trainer: String, roc: Double, accuracy: Double)
 
   object Statistics {
     implicit val formatter = Json.format[Statistics]
@@ -71,7 +73,7 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
       val correct: Double = scoreAndLabels.filter { case ((score, label)) => score == label }.count()
       val accuracy = correct / total
 
-      val statistics = new Statistics(metrics.areaUnderROC(), accuracy)
+      val statistics = new Statistics(TrainerType.Online.toString, metrics.areaUnderROC(), accuracy)
 
       log.info(s"Current model: ${model.toString()}")
       log.info(s"Area under the ROC curve: ${metrics.areaUnderROC()}")
@@ -108,7 +110,7 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
       val accuracy = correct / total
       log.info(s"Batch accuracy: ${accuracy}")
 
-      sendMessage(Json.toJson(new Statistics(0.0, accuracy)))
+      sendMessage(Json.toJson(new Statistics(TrainerType.Batch.toString, 0.0, accuracy)))
     })
   }
 
