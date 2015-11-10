@@ -40,8 +40,6 @@ class Classifier(sparkContext: SparkContext, twitterHandler: ActorRef, onlineTra
 
   implicit val timeout = Timeout(5.seconds)
 
-  //var pipelineModel: PipelineModel = sparkContext.objectFile[PipelineModel]("app/resources/pipeline.model").first()
-
   override def receive =  {
 
     case Classify(token: String) =>
