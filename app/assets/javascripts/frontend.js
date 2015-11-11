@@ -19,6 +19,7 @@ export class Frontend {
     setupWebSockets() {
         var eventToast = document.querySelector('#event-toast');
         var eventLog = document.querySelector('event-log');
+        var metrics = document.querySelector("trainer-metrics");
 
         new WebSocket("#socket").on("onopen", (socket) => {
             console.log('Establish connection');
@@ -35,6 +36,8 @@ export class Frontend {
             var data = JSON.parse(message.detail);
 
             console.log(data);
+            metrics.update(data);
+
             if(data.trainer == "Online") {
               this.chart.push(data.accuracy);
             }
@@ -42,6 +45,7 @@ export class Frontend {
     }
 
     wire() {
+
         this.twitterCardList = document.querySelector('twitter-cardlist');
         var progressBar = document.querySelector('.paper-progress');
         var searchForm = document.querySelector('.search-box');

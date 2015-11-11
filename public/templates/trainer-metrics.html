@@ -1,0 +1,50 @@
+<dom-module id="trainer-metrics">
+    <template>
+      <table>
+        <tr>
+          <td colspan="2">Online</td>
+        </tr>
+        <tr>
+          <td>Accuracy</td><td>{{online.accuracy}}<span>%</span></td>
+        </tr>
+        <tr>
+          <td>ROC</td><td>{{online.roc}}<span>%</span></td>
+        </tr>
+        <tr>
+          <td colspan="2">Batch</td>
+        </tr>
+        <tr>
+          <td>Accuracy</td><td>{{batch.accuracy}}<span>%</span></td>
+        </tr>
+        <tr>
+          <td>ROC</td><td>{{batch.roc}}<span>%</span></td>
+        </tr>
+      </table>
+    </template>
+    <script>
+        Polymer({
+            is: 'trainer-metrics',
+            ready: function() {
+                  this.online = {
+                    accuracy: 0,
+                    roc: 0
+                  };
+                  this.batch = {
+                    accuracy: 0,
+                    roc: 0
+                  };
+            },
+            update: function(stat) {
+                console.log(stat);
+                var v = { accuracy: Math.round(stat.accuracy * 100), roc: Math.round(stat.roc * 100) };
+                if(stat.trainer == "Online") {
+                  this.set('online', v);
+                } else {
+                  this.set('batch', v);
+                }
+                console.log("online:", this.online);
+                console.log("batch:", this.batch);
+            }
+        });
+    </script>
+</dom-module>
