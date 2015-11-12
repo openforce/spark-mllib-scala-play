@@ -1,6 +1,7 @@
 package actors
 
 import actors.Classifier.{ClassificationResult, Classify}
+import actors.FetchResponseHandler.FetchResponseTimeout
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.{TestProbe, ImplicitSender, TestKit}
 import org.apache.spark.{SparkConf, SparkContext}
@@ -14,12 +15,7 @@ class ClassifierSpec extends TestKit(ActorSystem("ClassifierSpecAS")) with Impli
 
     "return a list of classified tweets" in {
 
-      val probe1 = TestProbe()
-      val probe2 = TestProbe()
-
-      val conf = new SparkConf().setAppName("test").setMaster("local")
-        .set("spark.driver.allowMultipleContexts", "true")
-      val sc = new SparkContext(conf)
+      val sc = createSparkContext()
 
       val twitterHandler = system.actorOf(Props[TwitterHandlerProxyStub], "twitter-handler")
       val onlineTrainer = system.actorOf(Props[OnlineTrainerProxyStub], "online-trainer")
@@ -30,16 +26,46 @@ class ClassifierSpec extends TestKit(ActorSystem("ClassifierSpecAS")) with Impli
 
       val classifier = system.actorOf(Props(new Classifier(sc, twitterHandler, onlineTrainer, batchTrainer, eventServer, estimator)))
 
-      within(4 seconds) {
-        probe1.send(classifier, Classify("apple"))
-        val result = probe1.expectMsgType[ClassificationResult]
-        val onlineModelResult: Array[LabeledTweet] = Array(LabeledTweet("The new Apple iPhone 6s is awesome", "1.0"), LabeledTweet("Apple is overpriced.", "0.0"))
-        val batchModelResult: Array[LabeledTweet] = Array(LabeledTweet("The new Apple iPhone 6s is awesome", "1.0"), LabeledTweet("Apple is overpriced.", "0.0"))
+      val probe = TestProbe()
+
+      within(1 seconds) {
+        probe.send(classifier, Classify("apple"))
+        val result = probe.expectMsgType[ClassificationResult]
+        val labeledTweets = Array(LabeledTweet("The new Apple iPhone 6s is awesome", "1.0"), LabeledTweet("Apple is overpriced.", "0.0"))
+        val onlineModelResult, batchModelResult = labeledTweets
 
         result.batchModelResult must equal(batchModelResult)
         result.onlineModelResult must equal(onlineModelResult)
       }
     }
+
+    "return a TimeoutException when timeout is exceeded" in {
+
+      val sc = createSparkContext()
+
+      val actorNamePrefix = "timing-out"
+      val twitterHandler = system.actorOf(Props[TimingOutTwitterHandlerProxyStub], s"$actorNamePrefix-twitter-handler")
+      val onlineTrainer = system.actorOf(Props[OnlineTrainerProxyStub], s"$actorNamePrefix-online-trainer")
+      val batchTrainer = system.actorOf(Props[BatchTrainerProxyStub], s"$actorNamePrefix-batch-trainer")
+      val eventServer = system.actorOf(Props[EventServerProxyStub], s"$actorNamePrefix-event-server")
+
+      val estimator = new EstimatorProxyStub()
+
+      val classifier = system.actorOf(Props(new Classifier(sc, twitterHandler, onlineTrainer, batchTrainer, eventServer, estimator)))
+
+      val probe = TestProbe()
+
+      within(1 second, 2 seconds) {
+        probe.send(classifier, Classify("apple"))
+        probe.expectMsg(FetchResponseTimeout)
+      }
+    }
   }
 
+  def createSparkContext(): SparkContext = {
+    val conf = new SparkConf().setAppName("test").setMaster("local")
+      .set("spark.driver.allowMultipleContexts", "true")
+    val sc = new SparkContext(conf)
+    sc
+  }
 }

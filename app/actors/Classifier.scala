@@ -40,7 +40,7 @@ class Classifier(sparkContext: SparkContext, twitterHandler: ActorRef, onlineTra
 
   implicit val timeout = Timeout(5.seconds)
 
-  override def receive =  {
+  override def receive =  LoggingReceive {
 
     case Classify(token: String) =>
       log.info(s"Start classifying tweets for token '$token'")
@@ -83,12 +83,13 @@ class FetchResponseHandler(onlineTrainer: ActorRef, batchTrainer: ActorRef, orig
 
     case FetchResponseTimeout =>
       log.debug("Timeout occurred")
+      originalSender ! FetchResponseTimeout
       context.stop(self)
   }
 
   import context.dispatcher
 
-  val timeoutMessenger = context.system.scheduler.scheduleOnce(5 seconds) {
+  val timeoutMessenger = context.system.scheduler.scheduleOnce(1 second) {
     self ! FetchResponseTimeout
   }
 }
@@ -154,7 +155,7 @@ class TrainingModelResponseHandler(fetchResponse: FetchResponse, originalSender:
 
     import context.dispatcher
 
-    val timeoutMessenger = context.system.scheduler.scheduleOnce(5 seconds) {
+    val timeoutMessenger = context.system.scheduler.scheduleOnce(3 seconds) {
       self ! TrainingModelRetrievalTimeout
     }
 }

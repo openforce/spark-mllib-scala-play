@@ -4,6 +4,8 @@ import javax.inject._
 
 import actors.Classifier._
 import actors.Director.GetClassifier
+import actors.FetchResponseHandler.FetchResponseTimeout
+import actors.TrainingModelResponseHandler.TrainingModelRetrievalTimeout
 import actors.{EventListener, EventServer, Director, StatisticsServer}
 import akka.actor.{Props, ActorRef, ActorSystem}
 import akka.pattern._
@@ -31,10 +33,17 @@ class Application @Inject() (system: ActorSystem, sparkContext: SparkContext) ex
   implicit val formats = Json.format[LabeledTweet]
 
   def classify(keyword: String) = Action.async {
-    for {
+    (for {
       classifier <- (receptionist ? GetClassifier).mapTo[ActorRef]
-      classificationResults <- (classifier ? Classify(keyword)).mapTo[ClassificationResult]
-    } yield Ok(Json.toJson(classificationResults.onlineModelResult))
+      classificationResults <- (classifier ? Classify(keyword)).map {
+        case c: ClassificationResult => c
+        case TrainingModelRetrievalTimeout => throw TimeoutException("Training models timed out.")
+        case FetchResponseTimeout => throw TimeoutException("Fetching tweets timed out.")
+      }
+    } yield Ok(Json.toJson(classificationResults.onlineModelResult))) recover {
+      case to: TimeoutException => GatewayTimeout(to.msg)
+      case ex => InternalServerError(ex.getMessage)
+    }
   }
 
   def index = Action {
@@ -59,5 +68,7 @@ class Application @Inject() (system: ActorSystem, sparkContext: SparkContext) ex
   }
 
 }
+
+case class TimeoutException(msg: String) extends Exception
 
 

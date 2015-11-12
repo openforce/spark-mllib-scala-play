@@ -3,10 +3,9 @@ package actors
 import actors.BatchTrainer.BatchTrainerModel
 import actors.OnlineTrainer.OnlineTrainerModel
 import akka.actor.{Actor, ActorRef, Props}
+import akka.event.LoggingReceive
 import classifiers.Estimator
 import org.apache.spark.SparkContext
-import org.apache.spark.ml.Model
-import org.apache.spark.mllib.classification.LogisticRegressionModel
 import play.api.Logger
 import play.api.Play.{configuration, current}
 
@@ -41,7 +40,7 @@ class Director(sparkContext: SparkContext, eventServer: ActorRef, statisticsServ
   var batchTrainerFinished = false
   var onlineTrainingFinished = false
 
-  override def receive = {
+  override def receive = LoggingReceive {
 
     case GetClassifier => sender ! classifier
 

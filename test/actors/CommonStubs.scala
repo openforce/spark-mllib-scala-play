@@ -4,6 +4,7 @@ import actors.BatchTrainer.BatchTrainerModel
 import actors.OnlineTrainer._
 import actors.TwitterHandler.{Fetch, FetchResponse}
 import akka.actor.ActorLogging
+import akka.event.LoggingReceive
 import classifiers.EstimatorProxy
 import org.apache.spark.ml.Transformer
 import org.apache.spark.mllib.classification.LogisticRegressionModel
@@ -19,6 +20,13 @@ class TwitterHandlerProxyStub extends TwitterHandlerProxy with ActorLogging {
       val tweets = Seq("The new Apple iPhone 6s is awesome", "Apple is overpriced.")
       sender ! FetchResponse(keyword, tweets)
     }
+  }
+}
+
+class TimingOutTwitterHandlerProxyStub extends TwitterHandlerProxy with ActorLogging {
+  def receive = LoggingReceive {
+    case Fetch(keyword) =>
+      log.debug(s"Doing nothing - forcing timeout")
   }
 }
 

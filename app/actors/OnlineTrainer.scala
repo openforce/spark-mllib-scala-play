@@ -2,6 +2,7 @@ package actors
 
 import actors.Director.OnlineTrainingFinished
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.event.LoggingReceive
 import features.{Features, TfIdf}
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.classification.{LogisticRegressionModel, StreamingLogisticRegressionWithSGD}
@@ -41,26 +42,30 @@ class OnlineTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends 
 
   val sqlContext = new SQLContext(sparkContext)
 
-  var logisticRegression: StreamingLogisticRegressionWithSGD = _
+  var logisticRegression: Option[StreamingLogisticRegressionWithSGD] = None
 
   import sqlContext.implicits._
 
-  override def receive = {
+  override def postStop() = {
+    ssc.stop(false)
+  }
+
+  override def receive = LoggingReceive {
 
     case Train(corpus) =>
       log.debug(s"Received Train message with tweets corpus")
       if (dumpCorpus) corpus.map(t => (t.tokens.toSeq, t.sentiment)).toDF().write.parquet(dumpPath)
       val tfIdf = TfIdf(corpus)
-      logisticRegression = new StreamingLogisticRegressionWithSGD()
+      logisticRegression = Some(new StreamingLogisticRegressionWithSGD()
         .setNumIterations(200)
         .setInitialWeights(Vectors.zeros(Features.coefficients))
-        .setStepSize(1.0)
+        .setStepSize(1.0))
       log.info(s"Start twitter stream for online training")
       val stream = TwitterUtils.createStream(ssc, twitterAuth, filters = SentimentIdentifier.sentimentEmoticons)
         .filter(t => t.getUser.getLang == "en" && !t.isRetweet)
         .map { Tweet(_) }
         .map(tweet => tweet.toLabeledPoint { _ => tfIdf.tf(tweet.tokens)})
-      logisticRegression.trainOn(stream)
+      logisticRegression.map(lr => lr.trainOn(stream))
       ssc.start()
       receptionist ! OnlineTrainingFinished
 
@@ -73,8 +78,10 @@ class OnlineTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends 
 
     case GetLatestModel =>
       log.debug(s"Received GetLatestModel message")
-      val lr = logisticRegression.latestModel()
-      sender ! OnlineTrainerModel(Some(lr))
+      val m = logisticRegression.map { lr =>
+        lr.latestModel()
+      }
+      sender ! OnlineTrainerModel(m)
 
   }
 

@@ -51,13 +51,12 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
 
     case m: OnlineTrainerModel => testOnlineModel(m)
 
-    case c: RDD[Tweet] => {
+    case c: RDD[Tweet] =>
       corpus = c
 
       dfCorpus = c.map(t => {
         (t.tokens.toSeq, t.sentiment)
       }).toDF("tokens", "label")
-    }
 
     case msg: JsValue => sendMessage(msg)
 

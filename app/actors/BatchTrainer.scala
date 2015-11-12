@@ -3,15 +3,14 @@ package actors
 import actors.Director.BatchTrainingFinished
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import org.apache.spark.SparkContext
-import org.apache.spark.ml.{Pipeline, Transformer}
 import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator
 import org.apache.spark.ml.feature.HashingTF
 import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
+import org.apache.spark.ml.{Pipeline, Transformer}
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SQLContext}
-import play.api.Play._
 import twitter.Tweet
 
 object BatchTrainer {
