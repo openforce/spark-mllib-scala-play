@@ -33,3 +33,4 @@ data/.ipynb_checkpoints/
 data/derby.log
 data/metastore_db/
 data/trainingandtestdata.bkp/
+.sbtopts
