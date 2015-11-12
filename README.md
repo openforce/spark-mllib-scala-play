@@ -10,6 +10,7 @@ Assuming that you have [Java 8](http://www.oracle.com/technetwork/java/javase/do
 
 1. Clone this repository: `git clone git@github.com:openforce/spark-mllib-scala-play.git`
 1. Change into the newly created directory: `cd spark-mllib-scala-play`
+1. Insert your Twitter access and consumer key/token pairs in `application.conf`. For generating a token, please refer to [dev.twitter.com](https://dev.twitter.com/oauth/overview/application-owner-access-tokens).
 1. Launch SBT: `sbt run`
 1. Navigate your browser to: <http://localhost:9000>
 
