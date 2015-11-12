@@ -55,7 +55,7 @@ class ClassifierSpec extends TestKit(ActorSystem("ClassifierSpecAS")) with Impli
 
       val probe = TestProbe()
 
-      within(1 second, 2 seconds) {
+      within(2 second, 3 seconds) {
         probe.send(classifier, Classify("apple"))
         probe.expectMsg(FetchResponseTimeout)
       }

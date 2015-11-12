@@ -89,7 +89,7 @@ class FetchResponseHandler(onlineTrainer: ActorRef, batchTrainer: ActorRef, orig
 
   import context.dispatcher
 
-  val timeoutMessenger = context.system.scheduler.scheduleOnce(1 second) {
+  val timeoutMessenger = context.system.scheduler.scheduleOnce(2 second) {
     self ! FetchResponseTimeout
   }
 }

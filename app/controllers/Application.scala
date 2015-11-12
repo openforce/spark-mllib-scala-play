@@ -41,7 +41,9 @@ class Application @Inject() (system: ActorSystem, sparkContext: SparkContext) ex
         case FetchResponseTimeout => throw TimeoutException("Fetching tweets timed out.")
       }
     } yield Ok(Json.toJson(classificationResults.onlineModelResult))) recover {
-      case to: TimeoutException => GatewayTimeout(to.msg)
+      case to: TimeoutException =>
+        eventServer ! to.msg
+        GatewayTimeout(to.msg)
       case ex => InternalServerError(ex.getMessage)
     }
   }
