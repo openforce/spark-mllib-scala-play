@@ -11,7 +11,7 @@ Assuming that you have [Java 8](http://www.oracle.com/technetwork/java/javase/do
 1. Clone this repository: `git clone git@github.com:openforce/spark-mllib-scala-play.git`
 1. Change into the newly created directory: `cd spark-mllib-scala-play`
 1. Launch SBT: `sbt run`
-1. Navigate your browser to: http://localhost:9000
+1. Navigate your browser to: <http://localhost:9000>
 
 ## The Classification Workflow
 
