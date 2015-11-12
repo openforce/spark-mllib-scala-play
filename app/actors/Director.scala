@@ -7,7 +7,6 @@ import akka.event.LoggingReceive
 import classifiers.Estimator
 import org.apache.spark.SparkContext
 import play.api.Logger
-import play.api.Play.{configuration, current}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -19,8 +18,6 @@ object Director {
 
   case object OnlineTrainingFinished
   case object BatchTrainingFinished
-
-  val trainOnline = configuration.getBoolean("ml.trainer.online").getOrElse(false)
 
 }
 
