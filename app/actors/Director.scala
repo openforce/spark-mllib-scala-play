@@ -13,8 +13,8 @@ import play.api.Play.{configuration, current}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
-object Receptionist {
-  def props(sparkContext: SparkContext, eventServer: ActorRef, statisticsServer: ActorRef) = Props(new Receptionist(sparkContext, eventServer, statisticsServer))
+object Director {
+  def props(sparkContext: SparkContext, eventServer: ActorRef, statisticsServer: ActorRef) = Props(new Director(sparkContext, eventServer, statisticsServer))
 
   case object GetClassifier
 
@@ -25,9 +25,9 @@ object Receptionist {
 
 }
 
-class Receptionist(sparkContext: SparkContext, eventServer: ActorRef, statisticsServer: ActorRef) extends Actor {
+class Director(sparkContext: SparkContext, eventServer: ActorRef, statisticsServer: ActorRef) extends Actor {
 
-  import Receptionist._
+  import Director._
 
   val log = Logger(this.getClass)
 

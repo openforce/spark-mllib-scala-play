@@ -1,6 +1,6 @@
 package actors
 
-import actors.Receptionist.OnlineTrainingFinished
+import actors.Director.OnlineTrainingFinished
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import features.{Features, TfIdf}
 import org.apache.spark.SparkContext

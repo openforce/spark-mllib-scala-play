@@ -1,6 +1,6 @@
 package actors
 
-import actors.Receptionist.BatchTrainingFinished
+import actors.Director.BatchTrainingFinished
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.{Pipeline, Transformer}

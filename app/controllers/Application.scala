@@ -3,8 +3,8 @@ package controllers
 import javax.inject._
 
 import actors.Classifier._
-import actors.Receptionist.GetClassifier
-import actors.{EventListener, EventServer, Receptionist, StatisticsServer}
+import actors.Director.GetClassifier
+import actors.{EventListener, EventServer, Director, StatisticsServer}
 import akka.actor.{Props, ActorRef, ActorSystem}
 import akka.pattern._
 import akka.util.Timeout
@@ -25,7 +25,7 @@ class Application @Inject() (system: ActorSystem, sparkContext: SparkContext) ex
   val log = Logger(this.getClass)
   val eventServer = system.actorOf(EventServer.props)
   val statisticsServer = system.actorOf(StatisticsServer.props(sparkContext))
-  val receptionist = system.actorOf(Receptionist.props(sparkContext, eventServer, statisticsServer), "receptionist")
+  val receptionist = system.actorOf(Director.props(sparkContext, eventServer, statisticsServer), "receptionist")
 
   implicit val timeout = Timeout(5 seconds)
   implicit val formats = Json.format[LabeledTweet]
