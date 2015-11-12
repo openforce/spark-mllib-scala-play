@@ -18,14 +18,12 @@ export class Frontend {
 
     setupWebSockets() {
         var eventToast = document.querySelector('#event-toast');
-//        var eventLog = document.querySelector('event-log');
-        var metr0ics = document.querySelector("trainer-metrics");
+        var metrics = document.querySelector("trainer-metrics");
 
         new WebSocket("#socket").on("onopen", (socket) => {
             console.log('Establish connection');
         }).on('onmessage', (socket, message) => {
             console.log(message.detail);
-//            eventLog.push('elements', message.detail);
             eventToast.text = message.detail;
             eventToast.show();
         });
