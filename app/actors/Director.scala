@@ -62,8 +62,11 @@ class Director(sparkContext: SparkContext, eventServer: ActorRef, statisticsServ
 
   def collectStatistics =
     if(batchTrainerFinished && onlineTrainingFinished)
+
+      // The batchTrainer doesn't change so we don't need to send the message regularly
+      batchTrainer ! GetLatestModel
+
       context.system.scheduler.schedule(0 seconds, 5 seconds) {
-        batchTrainer ! GetLatestModel
         onlineTrainer ! GetLatestModel
       }
 
