@@ -58,6 +58,7 @@ class Director(sparkContext: SparkContext, eventServer: ActorRef, statisticsServ
 
   def collectStatistics =
     if(batchTrainerFinished && onlineTrainingFinished)
+      log.debug("Batch trainer and online trainer finished so we can start fetching the models")
 
       // The batchTrainer doesn't change so we don't need to send the message regularly
       batchTrainer ! GetLatestModel

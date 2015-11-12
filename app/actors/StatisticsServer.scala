@@ -41,7 +41,7 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
   val sqlContext = new SQLContext(sparkContext)
   var clients = Set.empty[ActorRef]
   var corpus: RDD[Tweet] = sparkContext.emptyRDD[Tweet]
-  var dfCorpus: DataFrame = sqlContext.emptyDataFrame
+  var dfCorpus: Option[DataFrame] = None
 
   import sqlContext.implicits._
 
@@ -54,9 +54,9 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
     case c: RDD[Tweet] =>
       corpus = c
 
-      dfCorpus = c.map(t => {
+      dfCorpus = Some(c.map(t => {
         (t.tokens.toSeq, t.sentiment)
-      }).toDF("tokens", "label")
+      }).toDF("tokens", "label"))
 
     case msg: JsValue => sendMessage(msg)
 
@@ -69,9 +69,10 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
       clients -= sender
   }
 
-  private def testOnlineModel(model: OnlineTrainerModel) = {
-    val tfIdf = TfIdf(corpus)
-    model.model.foreach(model => {
+  private def testOnlineModel(onlineTrainerModel: OnlineTrainerModel) = {
+    onlineTrainerModel.model.map(model => {
+      log.debug("Test online trainer model")
+      val tfIdf = TfIdf(corpus)
       val scoreAndLabels = corpus map { tweet => (model.predict(tfIdf.tfIdf(tweet.tokens)), tweet.sentiment) }
       val total: Double = scoreAndLabels.count()
       val metrics = new BinaryClassificationMetrics(scoreAndLabels)
@@ -89,7 +90,9 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
       log.info(s"F-Measure: ${mc.fMeasure}")
 
       sendMessage(Json.toJson(statistics))
-    })
+    }) getOrElse {
+      log.info(s"No online trainer model found.")
+    }
   }
 
   private def sendMessage(msg: JsValue) = {
@@ -98,8 +101,11 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
     }
   }
 
-  private def testBatchModel(model: BatchTrainerModel) = {
-    model.model.foreach(model => {
+  private def testBatchModel(batchTrainerModel: BatchTrainerModel) = {
+    (for {
+      model <- batchTrainerModel.model
+      dfCorpus <- dfCorpus } yield {
+      log.debug("Test batch trainer model")
       var total = 0.0
       var correct = 0.0
 
@@ -116,7 +122,9 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
       log.info(s"Batch accuracy: ${accuracy}")
 
       sendMessage(Json.toJson(new Statistics(TrainerType.Batch, 0.0, accuracy)))
-    })
+    }) getOrElse {
+      log.info("No batch trainer model or dfCorpus found.")
+    }
   }
 
 }
