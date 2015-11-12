@@ -2,6 +2,7 @@ package actors
 
 import actors.BatchTrainer.BatchTrainerModel
 import actors.OnlineTrainer.OnlineTrainerModel
+import actors.StatisticsServer.TrainerType.TrainerType
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.event.LoggingReceive
 import features.TfIdf
@@ -9,18 +10,23 @@ import org.apache.spark.SparkContext
 import org.apache.spark.mllib.evaluation.{BinaryClassificationMetrics, MulticlassMetrics}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{JsValue, Json, Reads, Writes}
 import twitter.Tweet
+import util.EnumUtils
 
 object StatisticsServer {
 
   def props(sparkContext: SparkContext) = Props(new StatisticsServer(sparkContext))
 
   object TrainerType extends Enumeration {
+    type TrainerType = TrainerType.Value
     val Batch, Online = Value
+
+    implicit val reads: Reads[TrainerType] = EnumUtils.enumReads(TrainerType)
+    implicit val writes: Writes[TrainerType] = EnumUtils.enumWrites
   }
 
-  case class Statistics(trainer: String, roc: Double, accuracy: Double)
+  case class Statistics(trainer: TrainerType, roc: Double, accuracy: Double)
 
   object Statistics {
     implicit val formatter = Json.format[Statistics]
@@ -73,7 +79,7 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
       val correct: Double = scoreAndLabels.filter { case ((score, label)) => score == label }.count()
       val accuracy = correct / total
 
-      val statistics = new Statistics(TrainerType.Online.toString, metrics.areaUnderROC(), accuracy)
+      val statistics = new Statistics(TrainerType.Online, metrics.areaUnderROC(), accuracy)
 
       log.info(s"Current model: ${model.toString()}")
       log.info(s"Area under the ROC curve: ${metrics.areaUnderROC()}")
@@ -110,7 +116,7 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
       val accuracy = correct / total
       log.info(s"Batch accuracy: ${accuracy}")
 
-      sendMessage(Json.toJson(new Statistics(TrainerType.Batch.toString, 0.0, accuracy)))
+      sendMessage(Json.toJson(new Statistics(TrainerType.Batch, 0.0, accuracy)))
     })
   }
 
