@@ -27,14 +27,14 @@ class Application @Inject() (system: ActorSystem, sparkContext: SparkContext) ex
   val log = Logger(this.getClass)
   val eventServer = system.actorOf(EventServer.props)
   val statisticsServer = system.actorOf(StatisticsServer.props(sparkContext))
-  val receptionist = system.actorOf(Director.props(sparkContext, eventServer, statisticsServer), "receptionist")
+  val director = system.actorOf(Director.props(sparkContext, eventServer, statisticsServer), "receptionist")
 
   implicit val timeout = Timeout(5 seconds)
   implicit val formats = Json.format[LabeledTweet]
 
   def classify(keyword: String) = Action.async {
     (for {
-      classifier <- (receptionist ? GetClassifier).mapTo[ActorRef]
+      classifier <- (director ? GetClassifier).mapTo[ActorRef]
       classificationResults <- (classifier ? Classify(keyword)).map {
         case c: ClassificationResult => c
         case TrainingModelRetrievalTimeout => throw TimeoutException("Training models timed out.")
@@ -52,12 +52,13 @@ class Application @Inject() (system: ActorSystem, sparkContext: SparkContext) ex
     Ok(views.html.index.render)
   }
 
-  def socket = WebSocket.acceptWithActor[String, String] { request => out =>
-    log.debug(s"Client connected to socket")
+  def eventSocket = WebSocket.acceptWithActor[String, String] { request => out =>
+    log.debug(s"Client connected to event socket")
     EventListener.props(out, eventServer)
   }
 
   def statisticsSocket = WebSocket.acceptWithActor[JsValue, JsValue] { request => out =>
+    log.debug(s"Client connected to statistics socket")
     EventListener.props(out, statisticsServer)
   }
 
