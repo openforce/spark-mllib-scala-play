@@ -4,12 +4,11 @@ export class Chart {
      * Setup the chart and wire it to the frontend
      */
     wire() {
-        this.$performance = $('.performance');
-        this.updateInterval = 2000;
-        this.totalPoints = 300;
+        this.updateInterval = 1000;
+        this.totalPoints = 100;
         this.data = [];
 
-        window.plot = this.plot = $.plot(".realtime-chart", [ this.getRandomData() ], {
+        var chartOptions = {
             series: {
                 shadowSize: 0	// Drawing is faster without shadows
             },
@@ -25,41 +24,47 @@ export class Chart {
             grid: {
                 borderWidth: 0
             }
-        });
+        };
+
+        var timeout;
+        var $plotBig = $(".realtime-chart-big-container");
+        var $window = $(window);
+
+        var handleMouseClick = (event) => {
+            if ($plotBig.is(":hidden")) {
+                $plotBig.velocity('fadeIn', {
+                    duration: 300
+                });
+            } else {
+                $plotBig.velocity('fadeOut', {
+                    duration: 300
+                });
+            }
+        };
+
+        var handleMouseOver = (event) => {
+            if (event.type === "mouseover") {
+                timeout = setTimeout(() => {
+                    $plotBig.height($window.innerHeight() - $plotBig.offset().y).velocity('fadeIn', {
+                        duration: 300
+                    });
+                }, 1000);
+            } else {
+                clearTimeout(timeout);
+
+                $plotBig.velocity('fadeOut', {
+                    duration: 300
+                });
+            }
+        };
+
+        //$(".realtime-chart").on('click', handleMouseClick);
+        $(".realtime-chart").on('mouseover mouseout', handleMouseOver);
+
+        this.plot = $.plot(".realtime-chart", [ this.data ], chartOptions);
+        this.plotBig = $.plot(".realtime-chart-big", [ this.data ], chartOptions);
 
         this.draw();
-    }
-
-    /**
-     * Test function that generates random data
-     * @returns {Array}
-     */
-    getRandomData() {
-        if (this.data.length > 0)
-            this.data = this.data.slice(1);
-
-        // Do a random walk
-        while (this.data.length < this.totalPoints) {
-            var prev = this.data.length > 0 ? this.data[this.data.length - 1] : 50,
-            y = prev + Math.random() * 10 - 5;
-
-            if (y < 0) {
-                y = 0;
-            } else if (y > 100) {
-                y = 100;
-            }
-
-            this.data.push(y);
-        }
-
-        // Zip the generated y values with the x values
-
-        var res = [];
-        for (var i = 0; i < this.data.length; ++i) {
-            res.push([i, this.data[i]])
-        }
-
-        return res;
     }
 
     /**
@@ -69,13 +74,12 @@ export class Chart {
         var draw = () => {
             // create the time series array for flot
             var data = [ this.data.map((entry, index) => [ index, entry ]) ];
-            data = this.getRandomData();
 
-            this.plot.setData([ data ]);
+            this.plot.setData(data);
             this.plot.draw();
 
-            var performance = parseInt(data[data.length - 1] * 100) / 100;
-            this.$performance.text(performance.toString().replace('.', ','));
+            this.plotBig.setData(data);
+            this.plotBig.draw();
 
             setTimeout(draw, this.updateInterval);
         };

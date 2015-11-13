@@ -1,6 +1,6 @@
 .background() {
   background-image: -webkit-linear-gradient(-360deg, #f6911e, #febd36);
-  background-image: "-webkit-linear-gradient(0deg, #f6911e, #febd36, )";
+  background-image: ~"-webkit-linear-gradient(0deg, #f6911e, #febd36, )";
   background-image: ~"linear-gradient(90deg,#f6911e,#febd36,,,,,,,,)";
 }
 
@@ -316,13 +316,23 @@ paper-toolbar.paper-toolbar-0 {
     }
   }
 
-  .chart {
-    height: 200px;
-    width: 50%;
-  }
-  .chart {
-    height: 200px;
-    width: 48%;
+  .realtime-chart-big-container {
+    position: absolute;
+    text-align: center;
+    z-index: 1;
+    background-color: #fff;
+    margin-top: 10px;
+    padding: 20px;
+    display: none;
+    width: 100%;
+    left: 0;
+    height: 100%;
+
+    .realtime-chart-big {
+      height: 250px;
+      width: 800px;
+      display: inline-block;
+    }
   }
 }
 
@@ -396,13 +406,33 @@ paper-toolbar.paper-toolbar-0 {
     padding: 0 10px;
     margin: 20px 0;
   }
+
+  .metric-block {
+    margin: 24px 0;
+  }
 }
 
 @media (max-width: 700px) {
+  .heading-container {
+    &.headings {
+      h1 {
+        font-size: 32px;
+      }
+    }
+  }
+
+  nav.navbar.navbar-default {
+    .container {
+      padding: 0;
+    }
+
+    .heading {
+      font-size: 16px;
+    }
+  }
+
   .stats-container {
     .metric-block {
-      margin: 24px 0;
-
       dd {
         text-align: center;
         margin-bottom: 12px;

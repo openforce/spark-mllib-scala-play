@@ -3,6 +3,7 @@
 <html>
     <head>
         <title>@title</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <script src='@routes.Assets.at("javascripts/vendor/webcomponentsjs/webcomponents-lite.min.js")'></script>
         <link href='//fonts.googleapis.com/css?family=Lora:400,400italic,700,700italic|Roboto:400,100,100italic,300,300italic,400italic,500,500italic,700italic,700,900,900italic' rel='stylesheet' type='text/css'>
         <link rel="import" href='@routes.Assets.at("templates/elements.html")'>
@@ -21,7 +22,7 @@
                         </a>
                         <ul class="navbar-right">
                             <li>
-                                <a href="http://www.openforce.com">About us</a>
+                                <a href="http://www.openforce.com">About</a>
                             </li>
                         </ul>
                         <div class="heading">Twitter Sentiment Analysis</div>
@@ -48,7 +49,7 @@
             </div>
             <form class="heading-container search">
                 <div class="paper-input">
-                    <paper-input label="Keyword">
+                    <paper-input label="Keyword" autofocus>
                         <paper-icon-button suffix icon="search" id="start-predicting"></paper-icon-button>
                     </paper-input>
                 </div>

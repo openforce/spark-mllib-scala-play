@@ -9,57 +9,39 @@ export class Frontend {
         this.chart = new Chart();
     }
 
-    handleInput() {
-        var $searchBox = $('.search');
-        var $paperInput = $('paper-input', $searchBox);
-        var $content = $('.content');
-
-        $paperInput.on('keydown', () => {
-            if (event.keyCode === 13) {
-                $searchBox.addClass('show-results');
-                $content.velocity('scroll', {
-                    duration: 500,
-                    offset: -175
-                });
-            }
-        });
-    }
-
     handleScrolling() {
         var $window = $(window);
         var $navbar = $('.navbar');
+        var $pushDown = $('.push-down');
         var $headings = $('.headings');
         var $searchBox = $('.search');
         var height;
 
-        function onResize() {
+        var onResize = () => {
             height = $window.innerHeight();
-        }
+        };
 
-        function onScroll() {
-            if ($window.scrollTop() > 180) {
-                $navbar.removeClass('navbar-top').addClass('show-heading')
-                $headings.addClass('invisible')
-            }
-            else {
-                $navbar.addClass('navbar-top').removeClass('show-heading')
-                $headings.removeClass('invisible')
-            }
+        var onScroll = () => {
+            var scrollTop = $window.scrollTop();
 
-            if ($window.scrollTop() > height - 100) {
-                $navbar.addClass('navbar-background')
-            }
-            else {
-                $navbar.removeClass('navbar-background')
+            if (scrollTop > 180) {
+                $pushDown.addClass('push-down-small');
+                $navbar.removeClass('navbar-top').addClass('show-heading');
+                $headings.addClass('invisible');
+                $searchBox.addClass('show-results');
+            } else {
+                $pushDown.removeClass('push-down-small');
+                $navbar.addClass('navbar-top').removeClass('show-heading');
+                $headings.removeClass('invisible');
+                $searchBox.removeClass('show-results');
             }
 
-            if ($window.scrollTop() > 180) {
-                $searchBox.addClass('show-results')
+            if (scrollTop > 250) {
+                $navbar.addClass('navbar-background');
+            } else {
+                $navbar.removeClass('navbar-background');
             }
-            else {
-                $searchBox.removeClass('show-results')
-            }
-        }
+        };
 
         $window.on('scroll', onScroll).on('resize', onResize);
 
@@ -101,15 +83,15 @@ export class Frontend {
     }
 
     wire() {
-
         this.twitterCardList = document.querySelector('twitter-cardlist');
+        var $batchResult = $('.batch-result');
+        var $content = $('.content');
         var progressBar = document.querySelector('.paper-progress');
         var searchForm = document.querySelector('.search');
         var searchBox = document.querySelector('paper-input');
         var container = document.querySelector('#mainContainer');
 
         this.handleScrolling();
-        this.handleInput();
 
         this.chart.wire();
         this.setupWebSockets();
@@ -118,28 +100,52 @@ export class Frontend {
          * Wire the frontend
          */
         searchForm.addEventListener('submit', (event) => {
-
             event.preventDefault();
 
             this.resetCardList();
 
+            $content.velocity("scroll", {duration: 350, offset: -175});
+
             this.api.classify(searchBox.value)
                 .then((json) => {
-                    console.log(json);
-                    json.forEach((item) => this.twitterCardList.push('elements', item));
+                    var negative = 0;
+                    var positive = 0;
+
+                    json.forEach((item) => {
+                        if (item.sentiment < 0.51) {
+                            ++negative;
+                        } else {
+                            ++positive;
+                        }
+
+                        this.twitterCardList.push('elements', item);
+                    });
+
+                    var ratio = 0;
+                    var sentiment = "";
+                    var sum = negative + positive;
+
+                    if (negative > positive) {
+                        ratio = negative / sum;
+                        sentiment = 'negative';
+                    } else {
+                        ratio = positive / sum;
+                        sentiment = 'positive';
+                    }
+
+                    ratio = (Math.round(ratio * 10000) / 100).toString().replace('.', ',');
+
+                    $batchResult
+                        .text(ratio)
+                        .parent()
+                        .removeClass('positive negative')
+                        .addClass(sentiment);
+
                     setTimeout(done, 0);
                 })
                 .catch((ex) => {
                     console.log(ex);
                 });
-
-            $.Velocity(searchBox.parentNode, 'scroll', {
-                container: container,
-                offset: -75,
-                duration: 400
-            });
-
-            setTimeout(() => $.Velocity(progressBar, "fadeIn", {duration: 200}));
         });
 
         // fade out elements

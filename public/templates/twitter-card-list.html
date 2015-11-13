@@ -18,19 +18,7 @@
   Polymer({
     is: 'twitter-cardlist',
     ready: function() {
-      this.elements = [
-        {sentiment: 1, tweet: "We did an unexpected workshop for the #iPhone4S at @apple yesterday and we got an awesome amount of info #notjustaboutthephone @gamerchik16"},
-        {sentiment: 0, tweet: "---» RT @Apple No question bro. RT @AintEeenTrippin: Should I get dis iPhone or a EVO 3D?"},
-        {sentiment: 1, tweet: "RT @imightbewrong: I'm OVER people bitching about the #iPhone4S... I think it's the smartest phone I've ever had and I'm very happy.   : ..."},
-        {sentiment: 0, tweet: "I'm OVER people bitching about the #iPhone4S... I think it's the smartest phone I've ever had and I'm very happy.   :)  Way to go @Apple!"},
-        {sentiment: 1, tweet: "@Twitter CEO points to @Apple as 'corporate mentor' as @iOS signups triple http://t.co/GCY8iphN"},
-        {sentiment: 1, tweet: "At the bus with my iPhone ;) thxx @apple"},
-        {sentiment: 0, tweet: "@azee1v1 @apple @umber AppStore is well done, so is iTunes on the mobile devices.  I was talking about desktop app."},
-        {sentiment: 0, tweet: "NYTimes: Coach Wants to See You. And Bring Your iPad. http://t.co/J2FTiEnG #iPad @apple set red 42 red 42 hut hut @NFL wish I had an #iPad"},
-        {sentiment: 1, tweet: "@apple @jilive @DanielPink: Apple sells 4 million iPhone 4S units in first weekend ... Steve Jobs brilliance lives on for ever! #iphone #RVA"},
-        {sentiment: 0, tweet: "@bkad5161 than apologize to @apple ;)"},
-        {sentiment: 1, tweet: "@Apple downloads of iOS 5 are proving popular with users  -- http://t.co/NSHLfiUX"}
-      ];
+      this.elements = [];
     },
     sentiment: function(prediction) {
       prediction = parseFloat(prediction);
