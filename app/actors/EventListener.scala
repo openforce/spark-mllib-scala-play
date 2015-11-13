@@ -1,6 +1,7 @@
 package actors
 
 import akka.actor.{Actor, ActorRef, Props}
+import akka.event.LoggingReceive
 import play.api.libs.json.JsValue
 
 object EventListener {
@@ -14,12 +15,10 @@ class EventListener(out: ActorRef, eventServer: ActorRef) extends Actor {
   }
 
   override def postStop(): Unit = {
-    super.postStop()
-
     eventServer ! Unsubscribe
   }
 
-  def receive = {
+  def receive = LoggingReceive {
     case msg: String =>
       out ! msg
 
