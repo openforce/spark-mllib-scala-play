@@ -16,6 +16,33 @@ Assuming that you have [Java 8](http://www.oracle.com/technetwork/java/javase/do
 
 ## The Classification Workflow
 
-The following diagram shows how the actor communication workflow looks like:
+The following diagram shows how the actor communication workflow for classification looks like:
 
-![The Classification Workflow](tutorial/images/actors.jpg)
+![The Classification Workflow](tutorial/images/actors.jpg "The Classification Workflow")
+
+The __Application__ controller serves HTTP requests and instatiates _EventServer_, _StatisticsServer_ and _Director_.
+
+The _Director_ is the root of the Actor hierarchy, which creates all other durable (long lived) child actors. Besides supervision of the child actors it builds the bridge between the Playframework and Akka worlds by handing over the _Classifier_ actor reference to the controllers. Moreover, when trainings of the estimators within _BatchTrainer_ and _OnlineTrainer_ are finished, this actor pass the latest Machine Learning models to the _StatisticsServer_ (see Figure 2.).
+
+
+The __Classifier__ creates a _FetchResponseHandler_ actor and tells the _TwitterHandler_ with a `Fetch` message (and the `ActorRef` of the _FetchResponseHandler_) to get the latest Tweets by a given token or query.
+
+Once the __TwitterHandler__ has fetched some Tweets, the `FetchResponse` is sent to the _FetchResponseHandler_.
+
+The __FetchResponseHandler__ creates a _TrainingModelResponseHandler_ and tells the _BatchTrainer_ and _OnlineTrainer_ to pass the latest model to _TrainingResponseHandler_. It registers itself as a monitor for _TrainingResponseHandler_ and when this actor terminates it stops itself as well.
+
+The __TrainingModelResponseHandler__ collects the models and vectorized Tweets makes predictions and send the results to the original sender (the _Application_ controller).
+
+## Model Training and Statistics
+
+The following diagram shows the actors involved in training the machine learning estimators and serving statistics about their predictive performance:
+
+![Model Training and Statistics](tutorial/images/actors2.jpg "Model Training and Statistics")
+
+### BatchTrainer
+
+### OnlineTrainer
+
+### EventServer
+
+### StatisticsServer
