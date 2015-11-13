@@ -7,7 +7,8 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.event.LoggingReceive
 import features.TfIdf
 import org.apache.spark.SparkContext
-import org.apache.spark.mllib.evaluation.{BinaryClassificationMetrics, MulticlassMetrics}
+import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
+import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 import play.api.libs.json.{JsValue, Json, Reads, Writes}
@@ -19,17 +20,23 @@ object StatisticsServer {
   def props(sparkContext: SparkContext) = Props(new StatisticsServer(sparkContext))
 
   object TrainerType extends Enumeration {
+
     type TrainerType = TrainerType.Value
+
     val Batch, Online = Value
 
     implicit val reads: Reads[TrainerType] = EnumUtils.enumReads(TrainerType)
+
     implicit val writes: Writes[TrainerType] = EnumUtils.enumWrites
+
   }
 
-  case class Statistics(trainer: TrainerType, roc: Double, accuracy: Double)
+  case class Statistics(trainer: TrainerType, model: String, areaUnderRoc: Double, accuracy: Double)
 
   object Statistics {
+
     implicit val formatter = Json.format[Statistics]
+
   }
 
 }
@@ -39,8 +46,11 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
   import StatisticsServer._
 
   val sqlContext = new SQLContext(sparkContext)
+
   var clients = Set.empty[ActorRef]
+
   var corpus: RDD[Tweet] = sparkContext.emptyRDD[Tweet]
+
   var dfCorpus: Option[DataFrame] = None
 
   import sqlContext.implicits._
@@ -53,12 +63,7 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
 
     case c: RDD[Tweet] =>
       corpus = c
-
-      dfCorpus = Some(c.map(t => {
-        (t.tokens.toSeq, t.sentiment)
-      }).toDF("tokens", "label"))
-
-    case msg: JsValue => sendMessage(msg)
+      dfCorpus = Some(c.map{t => (t.tokens.toSeq, t.sentiment)}.toDF("tokens", "label"))
 
     case Subscribe =>
       context.watch(sender)
@@ -67,11 +72,13 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
     case Unsubscribe =>
       context.unwatch(sender)
       clients -= sender
+
   }
 
-  private def testOnlineModel(onlineTrainerModel: OnlineTrainerModel) = {
-    onlineTrainerModel.model.map(model => {
+  private def testOnlineModel(onlineTrainerModel: OnlineTrainerModel) =
+    onlineTrainerModel.model.map { model =>
       log.debug("Test online trainer model")
+
       val tfIdf = TfIdf(corpus)
       val scoreAndLabels = corpus map { tweet => (model.predict(tfIdf.tfIdf(tweet.tokens)), tweet.sentiment) }
       val total: Double = scoreAndLabels.count()
@@ -79,52 +86,46 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
       val correct: Double = scoreAndLabels.filter { case ((score, label)) => score == label }.count()
       val accuracy = correct / total
 
-      val statistics = new Statistics(TrainerType.Online, metrics.areaUnderROC(), accuracy)
+      val statistics = Statistics(TrainerType.Online, model.toString(), metrics.areaUnderROC(), accuracy)
+      logStatistics(statistics)
 
-      log.info(s"Current model: ${model.toString()}")
-      log.info(s"Area under the ROC curve: ${metrics.areaUnderROC()}")
-      log.info(s"Accuracy: $accuracy ($correct of $total)")
-      val mc = new MulticlassMetrics(scoreAndLabels)
-      log.info(s"Precision: ${mc.precision}")
-      log.info(s"Recall: ${mc.recall}")
-      log.info(s"F-Measure: ${mc.fMeasure}")
-
-      sendMessage(Json.toJson(statistics))
-    }) getOrElse {
-      log.info(s"No online trainer model found.")
+      sendMessage(statistics)
     }
-  }
 
-  private def sendMessage(msg: JsValue) = {
-    clients.foreach { c =>
-      c ! msg
-    }
-  }
-
-  private def testBatchModel(batchTrainerModel: BatchTrainerModel) = {
-    (for {
+  private def testBatchModel(batchTrainerModel: BatchTrainerModel) =
+    for {
       model <- batchTrainerModel.model
-      dfCorpus <- dfCorpus } yield {
+      dfCorpus <- dfCorpus
+    } yield {
       log.debug("Test batch trainer model")
+
       var total = 0.0
       var correct = 0.0
-
-      model
+      val scoreAndLabels = model
         .transform(dfCorpus)
         .select("tokens", "label", "probability", "prediction")
-        .collect()
-        .foreach { case Row(tokens, label, prob, prediction) =>
-        if (label == prediction) correct += 1
-        total += 1
-      }
+        .map { case Row(tokens, label: Double, probability: Vector, prediction) =>
+          if (label == prediction) correct += 1
+          total += 1
+          (probability(1), label)
+        }
 
+      val metrics = new BinaryClassificationMetrics(scoreAndLabels)
       val accuracy = correct / total
-      log.info(s"Batch accuracy: ${accuracy}")
 
-      sendMessage(Json.toJson(new Statistics(TrainerType.Batch, 0.0, accuracy)))
-    }) getOrElse {
-      log.info("No batch trainer model or dfCorpus found.")
+      val statistics = Statistics(TrainerType.Batch, model.toString(), metrics.areaUnderROC(), accuracy)
+      logStatistics(statistics)
+
+      sendMessage(statistics)
     }
+
+  private def sendMessage(msg: Statistics) = clients.foreach { _ ! msg }
+
+  private def logStatistics(statistics: Statistics): Unit = {
+    log.info(s"Trainer type: ${statistics.trainer}")
+    log.info(s"Current model: ${statistics.model}")
+    log.info(s"Area under the ROC curve: ${statistics.areaUnderRoc}")
+    log.info(s"Accuracy: ${statistics.accuracy}")
   }
 
 }

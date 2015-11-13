@@ -1,7 +1,6 @@
 package controllers
 
 import javax.inject._
-
 import actors.Classifier._
 import actors.Director.GetClassifier
 import actors.FetchResponseHandler.FetchResponseTimeout
@@ -18,7 +17,6 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Action, Controller, WebSocket}
 import play.api.routing.JavaScriptReverseRouter
 import twitter.LabeledTweet
-
 import scala.concurrent.duration._
 
 @Singleton
