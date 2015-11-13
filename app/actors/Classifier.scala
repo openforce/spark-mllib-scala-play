@@ -7,7 +7,6 @@ import actors.OnlineTrainer.{OnlineFeatures, OnlineTrainerModel}
 import actors.TwitterHandler.{Fetch, FetchResponse}
 import akka.actor._
 import akka.event.LoggingReceive
-import akka.util.Timeout
 import classifiers.EstimatorProxy
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.{PipelineModel, Transformer}
@@ -37,8 +36,6 @@ object Classifier {
 class Classifier(sparkContext: SparkContext, twitterHandler: ActorRef, onlineTrainer: ActorRef, batchTrainer: ActorRef, eventServer: ActorRef, estimator: EstimatorProxy) extends Actor with ActorLogging {
 
   val sqlContext = new SQLContext(sparkContext)
-
-  implicit val timeout = Timeout(5.seconds)
 
   override def receive =  LoggingReceive {
 
@@ -89,7 +86,7 @@ class FetchResponseHandler(onlineTrainer: ActorRef, batchTrainer: ActorRef, orig
 
   import context.dispatcher
 
-  val timeoutMessenger = context.system.scheduler.scheduleOnce(2 second) {
+  val timeoutMessenger = context.system.scheduler.scheduleOnce(2 seconds) {
     self ! FetchResponseTimeout
   }
 }

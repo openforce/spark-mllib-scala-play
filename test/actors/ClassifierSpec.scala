@@ -2,20 +2,23 @@ package actors
 
 import actors.Classifier.{ClassificationResult, Classify}
 import actors.FetchResponseHandler.FetchResponseTimeout
+import actors.TrainingModelResponseHandler.TrainingModelRetrievalTimeout
 import akka.actor.{ActorSystem, Props}
-import akka.testkit.{TestProbe, ImplicitSender, TestKit}
+import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import org.apache.spark.{SparkConf, SparkContext}
-import org.scalatest.{MustMatchers, WordSpecLike}
+import org.scalatest.{BeforeAndAfterEach, MustMatchers, WordSpecLike}
 import twitter.LabeledTweet
+
 import scala.concurrent.duration._
 
-class ClassifierSpec extends TestKit(ActorSystem("ClassifierSpecAS")) with ImplicitSender with WordSpecLike with MustMatchers {
+class ClassifierSpec extends TestKit(ActorSystem("ClassifierSpecAS")) with ImplicitSender with WordSpecLike with MustMatchers with BeforeAndAfterEach {
+
+  var sc: SparkContext = _
 
   "A classifier" should {
 
-    "return a list of classified tweets" in {
 
-      val sc = createSparkContext()
+    "return a list of classified tweets" in {
 
       val twitterHandler = system.actorOf(Props[TwitterHandlerProxyStub], "twitter-handler")
       val onlineTrainer = system.actorOf(Props[OnlineTrainerProxyStub], "online-trainer")
@@ -39,11 +42,11 @@ class ClassifierSpec extends TestKit(ActorSystem("ClassifierSpecAS")) with Impli
       }
     }
 
-    "return a TimeoutException when timeout is exceeded" in {
+    "return a FetchResponseTimeout when timeout in twitter handler is exceeded" in {
 
       val sc = createSparkContext()
 
-      val actorNamePrefix = "timing-out"
+      val actorNamePrefix = "twitter-timing-out"
       val twitterHandler = system.actorOf(Props[TimingOutTwitterHandlerProxyStub], s"$actorNamePrefix-twitter-handler")
       val onlineTrainer = system.actorOf(Props[OnlineTrainerProxyStub], s"$actorNamePrefix-online-trainer")
       val batchTrainer = system.actorOf(Props[BatchTrainerProxyStub], s"$actorNamePrefix-batch-trainer")
@@ -60,6 +63,37 @@ class ClassifierSpec extends TestKit(ActorSystem("ClassifierSpecAS")) with Impli
         probe.expectMsg(FetchResponseTimeout)
       }
     }
+
+
+
+    "return a TrainingModelRetrievalTimeout when timeout in training model response handler is exceeded" in {
+
+      val actorNamePrefix = "trainer-timing-out"
+      val twitterHandler = system.actorOf(Props[TwitterHandlerProxyStub], s"$actorNamePrefix-twitter-handler")
+      val onlineTrainer = system.actorOf(Props[TimingOutOnlineTrainerProxyStub], s"$actorNamePrefix-online-trainer")
+      val batchTrainer = system.actorOf(Props[BatchTrainerProxyStub], s"$actorNamePrefix-batch-trainer")
+      val eventServer = system.actorOf(Props[EventServerProxyStub], s"$actorNamePrefix-event-server")
+
+      val estimator = new EstimatorProxyStub()
+
+      val classifier = system.actorOf(Props(new Classifier(sc, twitterHandler, onlineTrainer, batchTrainer, eventServer, estimator)))
+
+      val probe = TestProbe()
+
+      within(3 second, 4 seconds) {
+        probe.send(classifier, Classify("apple"))
+        probe.expectMsg(4 seconds, TrainingModelRetrievalTimeout)
+      }
+    }
+
+  }
+
+  override protected def beforeEach() = {
+    sc = createSparkContext()
+  }
+
+  override protected def afterEach() = {
+    sc.stop()
   }
 
   def createSparkContext(): SparkContext = {

@@ -45,6 +45,16 @@ class OnlineTrainerProxyStub extends OnlineTrainerProxy with ActorLogging {
   }
 }
 
+class TimingOutOnlineTrainerProxyStub extends OnlineTrainerProxy with ActorLogging {
+  def receive = LoggingReceive {
+    case GetFeatures(fetchResponse) =>
+      log.debug(s"Doing nothing - forcing timeout")
+
+    case GetLatestModel =>
+      log.debug(s"Doing nothing - forcing timeout")
+  }
+}
+
 class BatchTrainerProxyStub extends BatchTrainerProxy with ActorLogging {
   override def receive = {
     case GetLatestModel =>
