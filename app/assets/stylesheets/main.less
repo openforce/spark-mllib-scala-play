@@ -1,3 +1,232 @@
+.background() {
+  background-image: -webkit-linear-gradient(-360deg, #f6911e, #febd36);
+  background-image: "-webkit-linear-gradient(0deg, #f6911e, #febd36, )";
+  background-image: ~"linear-gradient(90deg,#f6911e,#febd36,,,,,,,,)";
+}
+
+html, body {
+  height: 100%;
+}
+
+h1, h2, h3, h4, h5, h6, .heading {
+  font-family: 'Roboto', sans-serif;
+  font-weight: 200;
+}
+
+.push-down {
+  min-height: 100%;
+  width: 100%;
+  position: relative;
+  .background();
+
+  &::after {
+    content: " ";
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    top: 0;
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+}
+
+.content {
+  min-height: 100%;
+}
+
+nav.navbar.navbar-default {
+  position: fixed;
+  z-index: 2;
+  top: 0;
+  width: 100%;
+  margin-bottom: 0;
+  height: 80px;
+  border-radius: 0;
+  background-color: transparent;
+  background-size: cover;
+  background-position-y: 100%;
+  border: 0;
+  transition: .3s ease all;
+
+  .container {
+    position: relative;
+    z-index: 2;
+  }
+
+  .heading {
+    font-family: 'Roboto', sans-serif;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 200;
+    text-align: center;
+    margin-top: 30px;
+    opacity: 0;
+    transition: .3s ease opacity;
+  }
+
+  &.navbar-top {
+    background-color: transparent;
+    height: 100px;
+    padding-top: 10px;
+  }
+
+  &.navbar-background {
+    .background();
+
+    &::after {
+      content: " ";
+      position: absolute;
+      height: 100%;
+      width: 100%;
+      top: 0;
+      background-color: rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  &.show-heading {
+    .heading {
+      opacity: 1;
+    }
+  }
+
+  .navbar-right {
+    position: absolute;
+    right: 0;
+  }
+
+  .navbar-brand {
+    position: absolute;
+
+    img {
+      height: 50px;
+    }
+  }
+
+  ul {
+    list-style-type: none;
+    margin-top: 10px;
+
+    li {
+      padding: 20px 30px;
+
+      a {
+        color: #fff;
+        padding-bottom: 2px;
+
+        &:hover {
+          color: #fff;
+          text-decoration: none;
+          border-bottom: 2px solid #000;
+        }
+      }
+    }
+  }
+}
+
+.heading-container {
+  position: absolute;
+  top: 200px;
+  z-index: 1;
+  width: 100%;
+  text-align: center;
+  opacity: 1;
+  transition: .3s ease opacity;
+
+  &.headings {
+    &.invisible {
+      opacity: 0;
+    }
+
+    h1 {
+      font-family: 'Roboto', sans-serif;
+      font-weight: 200;
+      font-size: 48px;
+      color: #fff;
+      margin-bottom: 0;
+    }
+
+    h2 {
+      font-family: 'Roboto', sans-serif;
+      font-weight: 200;
+      font-size: 18px;
+      color: #e0e0e0;
+      margin: 48px 0 0;
+    }
+
+    .icons {
+      display: inline-block;
+      list-style-type: none;
+      width: 500px;
+      padding: 0;
+      margin-top: -10px;
+      opacity: .8;
+      max-width: 95%;
+
+      img {
+        max-width: 100%;
+        height: 75px;
+        vertical-align: middle;
+      }
+
+      li {
+        height: 100px;
+        width: 25%;
+        padding: 10px;
+        float: left;
+        text-align: center;
+      }
+    }
+  }
+
+  &.search {
+    top: ~"calc(20% + 275px)";
+    transition: .3s ease top;
+
+    &.show-results {
+      top: ~"calc(100% - 100px)";
+
+      paper-input {
+        width: 98%;
+      }
+    }
+
+    paper-input {
+      display: inline-block;
+      width: 635px;
+      max-width: 95%;
+      transition: .3s ease width;
+
+      .paper-icon-button {
+        color: #fff;
+      }
+
+      .input-content {
+        .paper-input-container {
+          color: #fff;
+
+          label {
+            color: #fff;
+            text-align: left;
+          }
+
+          .paper-input {
+            color: #fff;
+          }
+        }
+      }
+
+      .paper-input-container {
+        &.unfocused-line {
+          background-color: #e0e0e0;
+        }
+
+        &.focused-line {
+          background-color: #fff;
+        }
+      }
+    }
+  }
+}
+
 paper-button {
   background-color: #999;
 }
@@ -20,31 +249,25 @@ paper-toolbar.main-toolbar {
 }
 
 paper-toolbar.paper-toolbar-0 {
-    color: rgb(236, 239, 241);
+  color: rgb(236, 239, 241);
 }
 
 .card-container {
-  padding: 32px 48px;
   width: 100%;
   box-sizing: border-box;
-
   .paper-card-container {
     opacity: 0;
     margin: 16px;
     width: ~"calc(50% - 34px)";
     display: inline-block;
-
     paper-card {
       width: 100%;
-
       &.negative {
         background-color: rgba(239, 83, 80, 0.8);
       }
-
       &.positive {
         background-color: rgba(102, 187, 106, 0.8);
       }
-
       .card-actions {
         text-align: right;
       }
@@ -52,30 +275,178 @@ paper-toolbar.paper-toolbar-0 {
   }
 }
 
+.metrics {
+
+}
+
 .stats-container {
-  padding: 32px 48px;
+  padding: 64px 48px;
   z-index: 0;
+  margin: 0 auto;
+  text-align: center;
+
+  .metric-block {
+    width: 300px;
+    display: inline-block;
+    font-family: 'Roboto', sans-serif;
+    vertical-align: top;
+
+    .metric-heading {
+      font-size: 16px;
+      display: block;
+      width: 100%;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .realtime-chart {
+      height: 60px;
+    }
+
+    dt {
+      font-weight: 200;
+    }
+
+    dd {
+      text-align: left;
+    }
+
+    &.realtime-chart-container {
+      margin: 0 40px;
+    }
+  }
 
   .chart {
     height: 200px;
     width: 50%;
   }
-
   .chart {
     height: 200px;
     width: 48%;
   }
 }
 
+.card-list {
+  width: 50%;
+  float: left;
+  padding: 0 25px;
 
-.overlay {
-  position: relative;
-  z-index: 1;
+  h3 {
+    text-align: center;
+
+    &.negative {
+      color: #EB575C;
+    }
+
+    &.positive {
+      color: #49B571;
+    }
+  }
+
+  .tweet {
+    height: 75px;
+    margin: 10px 0;
+    padding: 10px 0;
+    border-bottom: 1px solid #ddd;
+
+    &:last-of-type {
+      border-bottom: none;
+    }
+
+    .fa-stack {
+      width: 50px;
+      height: 50px;
+      padding-top: 5px;
+      float: left;
+    }
+
+    .tweet-content {
+      position: relative;
+      display: table-cell;
+      vertical-align: middle;
+      height: 49px;
+      font-family: 'Lora', serif;
+    }
+
+    .fa {
+      color: #fff;
+
+      &.fa-circle {
+        opacity: .8;
+      }
+    }
+
+    &.positive {
+      .fa-circle {
+        color: #49B571;
+      }
+    }
+
+    &.negative {
+      .fa-circle {
+        color: #EB575C;
+      }
+    }
+  }
 }
 
-
-@media(max-width: 700px) {
-  .card-container .paper-card-container {
+@media (max-width: 1000px) {
+  .card-list {
     width: 100%;
+    padding: 0 10px;
+    margin: 20px 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .stats-container {
+    .metric-block {
+      margin: 24px 0;
+
+      dd {
+        text-align: center;
+        margin-bottom: 12px;
+      }
+
+      &.realtime-chart-container {
+        margin: 0;
+      }
+    }
+  }
+
+  .heading-container {
+    &.headings {
+      top: 100px;
+
+      .icons {
+        li {
+          width: 50%;
+          float: left;
+          height: 50px;
+
+          img {
+            height: 50px;
+          }
+        }
+      }
+    }
+
+    &.search {
+      bottom: 0px;
+    }
+  }
+
+  .card-list {
+    .tweet {
+      height: 100px;
+
+      .fa-stack {
+        padding-top: 15px;
+      }
+
+      .tweet-content {
+        height: 75px;
+      }
+    }
   }
 }

@@ -1,25 +1,45 @@
 <dom-module id="twitter-cardlist">
-    <template>
-        <template is="dom-repeat" items="{{elements}}">
-            <div class="paper-card-container"> <!-- fix for velocity (doesn't work with custom element paper-card) -->
-                <paper-card class$="{{sentiment(item.sentiment)}}">
-                    <div class="card-content">{{item.tweet}}</div>
-                </paper-card>
-            </div>
-        </template>
+  <template>
+    <template is="dom-repeat" items="{{elements}}">
+      <div class$="{{sentiment(item.sentiment)}}">
+        <div class='table-cell'>
+          <span class="fa-stack fa-lg">
+            <i class="fa fa-circle fa-stack-2x"></i>
+            <i class$="{{thumbs(item.sentiment)}}"></i>
+          </span>
+          <div class="tweet-content">
+            <span>{{item.tweet}}</span>
+          </div>
+        </div>
+      </div>
     </template>
-    <script>
-        Polymer({
-            is: 'twitter-cardlist',
-            ready: function() {
-                this.elements = [{
-                    tweet: "asdf"
-                }];
-            },
-            sentiment: function(prediction) {
-                prediction = parseFloat(prediction);
-                return prediction < .3 ? 'negative' : prediction > .7 ? 'positive' : "";
-            }
-        });
-    </script>
+  </template>
+  <script>
+  Polymer({
+    is: 'twitter-cardlist',
+    ready: function() {
+      this.elements = [
+        {sentiment: 1, tweet: "We did an unexpected workshop for the #iPhone4S at @apple yesterday and we got an awesome amount of info #notjustaboutthephone @gamerchik16"},
+        {sentiment: 0, tweet: "---» RT @Apple No question bro. RT @AintEeenTrippin: Should I get dis iPhone or a EVO 3D?"},
+        {sentiment: 1, tweet: "RT @imightbewrong: I'm OVER people bitching about the #iPhone4S... I think it's the smartest phone I've ever had and I'm very happy.   : ..."},
+        {sentiment: 0, tweet: "I'm OVER people bitching about the #iPhone4S... I think it's the smartest phone I've ever had and I'm very happy.   :)  Way to go @Apple!"},
+        {sentiment: 1, tweet: "@Twitter CEO points to @Apple as 'corporate mentor' as @iOS signups triple http://t.co/GCY8iphN"},
+        {sentiment: 1, tweet: "At the bus with my iPhone ;) thxx @apple"},
+        {sentiment: 0, tweet: "@azee1v1 @apple @umber AppStore is well done, so is iTunes on the mobile devices.  I was talking about desktop app."},
+        {sentiment: 0, tweet: "NYTimes: Coach Wants to See You. And Bring Your iPad. http://t.co/J2FTiEnG #iPad @apple set red 42 red 42 hut hut @NFL wish I had an #iPad"},
+        {sentiment: 1, tweet: "@apple @jilive @DanielPink: Apple sells 4 million iPhone 4S units in first weekend ... Steve Jobs brilliance lives on for ever! #iphone #RVA"},
+        {sentiment: 0, tweet: "@bkad5161 than apologize to @apple ;)"},
+        {sentiment: 1, tweet: "@Apple downloads of iOS 5 are proving popular with users  -- http://t.co/NSHLfiUX"}
+      ];
+    },
+    sentiment: function(prediction) {
+      prediction = parseFloat(prediction);
+      return 'tweet ' + (prediction < .51 ? 'negative' : 'positive');
+    },
+    thumbs: function(prediction) {
+      prediction = parseFloat(prediction);
+      return 'fa fa-thumbs-o-' + (prediction < .51 ? 'down' : 'up') + ' fa-stack-1x';
+    }
+  });
+  </script>
 </dom-module>

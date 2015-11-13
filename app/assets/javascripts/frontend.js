@@ -9,6 +9,64 @@ export class Frontend {
         this.chart = new Chart();
     }
 
+    handleInput() {
+        var $searchBox = $('.search');
+        var $paperInput = $('paper-input', $searchBox);
+        var $content = $('.content');
+
+        $paperInput.on('keydown', () => {
+            if (event.keyCode === 13) {
+                $searchBox.addClass('show-results');
+                $content.velocity('scroll', {
+                    duration: 500,
+                    offset: -175
+                });
+            }
+        });
+    }
+
+    handleScrolling() {
+        var $window = $(window);
+        var $navbar = $('.navbar');
+        var $headings = $('.headings');
+        var $searchBox = $('.search');
+        var height;
+
+        function onResize() {
+            height = $window.innerHeight();
+        }
+
+        function onScroll() {
+            if ($window.scrollTop() > 180) {
+                $navbar.removeClass('navbar-top').addClass('show-heading')
+                $headings.addClass('invisible')
+            }
+            else {
+                $navbar.addClass('navbar-top').removeClass('show-heading')
+                $headings.removeClass('invisible')
+            }
+
+            if ($window.scrollTop() > height - 100) {
+                $navbar.addClass('navbar-background')
+            }
+            else {
+                $navbar.removeClass('navbar-background')
+            }
+
+            if ($window.scrollTop() > 180) {
+                $searchBox.addClass('show-results')
+            }
+            else {
+                $searchBox.removeClass('show-results')
+            }
+        }
+
+        $window.on('scroll', onScroll).on('resize', onResize);
+
+        onScroll();
+        onResize();
+    }
+
     /**
      * Clear the card list
      */
@@ -36,8 +94,8 @@ export class Frontend {
             console.log(data);
             metrics.update(data);
 
-            if(data.trainer == "Online") {
-              this.chart.push(data.accuracy);
+            if (data.trainer == "Online") {
+                this.chart.push(data.accuracy);
             }
         });
     }
@@ -46,9 +104,12 @@ export class Frontend {
 
         this.twitterCardList = document.querySelector('twitter-cardlist');
         var progressBar = document.querySelector('.paper-progress');
-        var searchForm = document.querySelector('.search-box');
+        var searchForm = document.querySelector('.search');
         var searchBox = document.querySelector('paper-input');
         var container = document.querySelector('#mainContainer');
+
+        this.handleScrolling();
+        this.handleInput();
 
         this.chart.wire();
         this.setupWebSockets();
@@ -72,17 +133,17 @@ export class Frontend {
                     console.log(ex);
                 });
 
-            Velocity(searchBox.parentNode, 'scroll', {
+            $.Velocity(searchBox.parentNode, 'scroll', {
                 container: container,
                 offset: -75,
                 duration: 400
             });
 
-            setTimeout(() => Velocity(progressBar, "fadeIn", {duration: 200}));
+            setTimeout(() => $.Velocity(progressBar, "fadeIn", {duration: 200}));
         });
 
         // fade out elements
-        Velocity(progressBar, "fadeOut", {duration: 0});
+        $.Velocity(progressBar, "fadeOut", {duration: 0});
 
         var done = () => {
             // get all paper cards (each paper card represents one tweet)
@@ -95,7 +156,7 @@ export class Frontend {
              */
             var fadeIn = (n, duration) => {
                 if (n < paperCards.length) {
-                    Velocity(paperCards[n], "fadeIn", {
+                    $.Velocity(paperCards[n], "fadeIn", {
                         duration: duration,
                         display: 'inline-block'
                     });
@@ -108,7 +169,7 @@ export class Frontend {
             fadeIn(0, 300);
 
             // fade out the paper-progress
-            Velocity(progressBar, "fadeOut", {duration: 150});
+            $.Velocity(progressBar, "fadeOut", {duration: 150});
         };
     }
 

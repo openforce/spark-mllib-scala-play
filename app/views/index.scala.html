@@ -1,44 +1,24 @@
 @main(title = "Twitter Sentiment Analysis", subtitle = "Powered by Spark, MLlib, Scala, Akka and Play!") {
 
     <div class="overlay">
-
-      <div class="stats-container">
-        <div class="chart"></div>
-        <div class="metrics">
-          <trainer-metrics></trainer-metrics>
+        <ws-element id="socket" url="ws://localhost:9000/eventSocket"></ws-element>
+        <ws-element id="statisticsSocket" url="ws://localhost:9000/statisticsSocket"></ws-element>
+        <div class="stats-container">
+            <h2>Statistics</h2>
+            <div class="metrics">
+                <trainer-metrics></trainer-metrics>
+            </div>
         </div>
-      </div>
-
-        <form class="search-box">
-
-            <h3>Enter a keyword</h3>
-            <p>
-                The keyword you enter will be used to search twitter for tweets.
-                The found tweets will be fed into our evaluation engine and the engine will automatically decide the sentiment for each tweet.
-            </p>
-
-            <paper-toast id="event-toast"></paper-toast>
-
-            <ws-element id="socket" url="ws://localhost:9000/eventSocket"></ws-element>
-            <ws-element id="statisticsSocket" url="ws://localhost:9000/statisticsSocket"></ws-element>
-            <div class="paper-input">
-                <paper-input label="Keyword" autofocus>
-                    <paper-icon-button suffix icon="search" id="start-predicting"></paper-icon-button>
-                </paper-input>
-            </div>
-            <div class="paper-progress">
-                <paper-progress indeterminate></paper-progress>
-            </div>
-        </form>
-
-
-
         <div class="card-container">
-            <twitter-cardlist>
-            </twitter-cardlist>
+            <div class="card-list">
+                <h3 class="negative">Batch Results (59%)</h3>
+                <twitter-cardlist></twitter-cardlist>
+            </div>
+            <div class="card-list">
+                <h3 class="positive">Online Results (78%)</h3>
+                <twitter-cardlist></twitter-cardlist>
+            </div>
         </div>
     </div>
-
-
 
 }

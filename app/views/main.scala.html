@@ -4,42 +4,62 @@
     <head>
         <title>@title</title>
         <script src='@routes.Assets.at("javascripts/vendor/webcomponentsjs/webcomponents-lite.min.js")'></script>
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+        <link href='//fonts.googleapis.com/css?family=Lora:400,400italic,700,700italic|Roboto:400,100,100italic,300,300italic,400italic,500,500italic,700italic,700,900,900italic' rel='stylesheet' type='text/css'>
         <link rel="import" href='@routes.Assets.at("templates/elements.html")'>
-        <link rel="import" href='@routes.Assets.at("stylesheets/vendor/ice.html")'>
-        <link rel="stylesheet" href='@routes.Assets.at("stylesheets/main.css")'/>
-
-            <!-- For shared styles, shared-styles.html import in elements.html -->
-        <style is="custom-style" include="shared-styles"></style>
+        <link rel="stylesheet" href='@routes.Assets.versioned("javascripts/vendor/bootstrap/dist/css/bootstrap.min.css")'/>
+        <link rel="stylesheet" href='@routes.Assets.versioned("stylesheets/vendor/font-awesome/css/font-awesome.min.css")'/>
+        <link rel="stylesheet" href='@routes.Assets.versioned("stylesheets/main.css")'/>
     </head>
     <body unresolved class="fullbleed layout vertical">
         <span id="browser-sync-binding"></span>
         <template is="dom-bind" id="app">
-                <!-- Main Area -->
-            <paper-scroll-header-panel main condenses keep-condensed-header>
-
-                    <!-- Main Toolbar -->
-                <paper-toolbar id="mainToolbar" class="tall main-toolbar">
-                    <span class="flex"></span>
-
-                        <!-- Toolbar icons -->
-                    <paper-icon-button icon="refresh"></paper-icon-button>
-
-                        <!-- Application name -->
-                    <div class="middle middle-container center horizontal layout">
-                        <div class="app-name">@title</div>
+            <div class="header">
+                <nav class="navbar navbar-default">
+                    <div class="container">
+                        <a class="navbar-brand" href="#">
+                            <img alt="Brand" src='@routes.Assets.at("images/logo.png")'>
+                        </a>
+                        <ul class="navbar-right">
+                            <li>
+                                <a href="http://www.openforce.com">About us</a>
+                            </li>
+                        </ul>
+                        <div class="heading">Twitter Sentiment Analysis</div>
                     </div>
-
-                        <!-- Application sub title -->
-                    <div class="bottom bottom-container center horizontal layout">
-                        <div class="bottom-title paper-font-subhead">@subtitle</div>
-                    </div>
-
-                </paper-toolbar>
-
-                    <!-- Main Content -->
-                <div class="content">@content</div>
-            </paper-scroll-header-panel>
+                </nav>
+            </div>
+            <div class="heading-container headings">
+                <h1>Twitter Sentiment Analysis</h1>
+                <h2>powered by</h2>
+                <ul class="icons">
+                    <li class="scala">
+                        <img src="@routes.Assets.at("images/header-logo-scala.svg")">
+                    </li>
+                    <li class="akka">
+                        <img src="@routes.Assets.at("images/header-logo-akka.svg")">
+                    </li>
+                    <li class="play">
+                        <img src="@routes.Assets.at("images/header-logo-play.svg")">
+                    </li>
+                    <li class="spark">
+                        <img src="@routes.Assets.at("images/header-logo-spark.svg")">
+                    </li>
+                </ul>
+            </div>
+            <form class="heading-container search">
+                <div class="paper-input">
+                    <paper-input label="Keyword">
+                        <paper-icon-button suffix icon="search" id="start-predicting"></paper-icon-button>
+                    </paper-input>
+                </div>
+            </form>
+            <div class="push-down"></div>
+                <!-- Main Content -->
+            <div class="content">
+                @content
+            </div>
+            <paper-toast id="event-toast"></paper-toast>
+                <!--<event-log></event-log>-->
         </template>
 
         <link rel="import" href='@routes.Assets.at("templates/libraries.html")'>

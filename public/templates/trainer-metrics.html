@@ -1,46 +1,52 @@
 <dom-module id="trainer-metrics">
     <template>
-      <table>
-        <tr>
-          <td colspan="2">Online</td>
-        </tr>
-        <tr>
-          <td>Accuracy</td><td>{{online.accuracy}}<span>%</span></td>
-        </tr>
-        <tr>
-          <td>ROC</td><td>{{online.roc}}<span>%</span></td>
-        </tr>
-        <tr>
-          <td colspan="2">Batch</td>
-        </tr>
-        <tr>
-          <td>Accuracy</td><td>{{batch.accuracy}}<span>%</span></td>
-        </tr>
-        <tr>
-          <td>ROC</td><td>{{batch.roc}}<span>%</span></td>
-        </tr>
-      </table>
+        <div class="metric-block">
+            <span class='metric-heading heading'>Batch Prediction Statistics</span>
+            <dl class="dl-horizontal">
+                <dt>Accuracy</dt>
+                <dd>72%</dd>
+                <dt>ROC</dt>
+                <dd>80%</dd>
+            </dl>
+        </div>
+        <div class="metric-block realtime-chart-container">
+            <span class="metric-heading heading">Online Prediction Performance (<span
+                    class="performance"></span>%)</span>
+
+            <div class="realtime-chart"></div>
+        </div>
+        <div class="metric-block">
+            <span class='metric-heading heading'>Online Prediction Statistics</span>
+            <dl class="dl-horizontal">
+                <dt>Accuracy</dt>
+                <dd><span class="performance"></span>%</dd>
+                <dt>ROC</dt>
+                <dd>80%</dd>
+            </dl>
+        </div>
     </template>
     <script>
         Polymer({
             is: 'trainer-metrics',
-            ready: function() {
-                  this.online = {
+            ready: function () {
+                this.online = {
                     accuracy: 0,
-                    roc: 0
-                  };
-                  this.batch = {
+                    areaUnderRoc: 0
+                };
+                this.batch = {
                     accuracy: 0,
-                    roc: 0
-                  };
+                    areaUnderRoc: 0
+                };
             },
-            update: function(stat) {
-                console.log(stat);
-                var v = { accuracy: Math.round(stat.accuracy * 100), roc: Math.round(stat.roc * 100) };
-                if(stat.trainer == "Online") {
-                  this.set('online', v);
+            update: function (stat) {
+                var v = {
+                    accuracy: Math.round(stat.accuracy * 100),
+                    areaUnderRoc: Math.round(stat.areaUnderRoc * 100)
+                };
+                if (stat.trainer == "Online") {
+                    this.set('online', v);
                 } else {
-                  this.set('batch', v);
+                    this.set('batch', v);
                 }
                 console.log("online:", this.online);
                 console.log("batch:", this.batch);

@@ -4,11 +4,12 @@ export class Chart {
      * Setup the chart and wire it to the frontend
      */
     wire() {
-        this.updateInterval = 30;
+        this.$performance = $('.performance');
+        this.updateInterval = 2000;
         this.totalPoints = 300;
         this.data = [];
 
-        window.plot = this.plot = $.plot(".chart", [ this.data ], {
+        window.plot = this.plot = $.plot(".realtime-chart", [ this.getRandomData() ], {
             series: {
                 shadowSize: 0	// Drawing is faster without shadows
             },
@@ -20,6 +21,9 @@ export class Chart {
                 show: false,
                 min: 0,
                 max: 100
+            },
+            grid: {
+                borderWidth: 0
             }
         });
 
@@ -65,9 +69,13 @@ export class Chart {
         var draw = () => {
             // create the time series array for flot
             var data = [ this.data.map((entry, index) => [ index, entry ]) ];
+            data = this.getRandomData();
 
-            this.plot.setData(data);
+            this.plot.setData([ data ]);
             this.plot.draw();
+
+            var performance = parseInt(data[data.length - 1] * 100) / 100;
+            this.$performance.text(performance.toString().replace('.', ','));
 
             setTimeout(draw, this.updateInterval);
         };
