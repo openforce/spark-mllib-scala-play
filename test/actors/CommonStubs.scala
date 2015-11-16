@@ -5,7 +5,7 @@ import actors.OnlineTrainer._
 import actors.TwitterHandler.{Fetch, FetchResponse}
 import akka.actor.ActorLogging
 import akka.event.LoggingReceive
-import classifiers.EstimatorProxy
+import classifiers.PredictorProxy
 import org.apache.spark.ml.Transformer
 import org.apache.spark.mllib.classification.LogisticRegressionModel
 import org.apache.spark.mllib.linalg.Vector
@@ -75,7 +75,7 @@ class EventServerProxyStub extends EventServerProxy with ActorLogging {
   }
 }
 
-class EstimatorProxyStub extends EstimatorProxy {
+class PredictorProxyStub extends PredictorProxy {
 
   val lts = Array(LabeledTweet("The new Apple iPhone 6s is awesome", "1.0"), LabeledTweet("Apple is overpriced.", "0.0"))
 

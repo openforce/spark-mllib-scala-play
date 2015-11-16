@@ -2,9 +2,9 @@ package actors
 
 import actors.BatchTrainer.BatchTrainerModel
 import actors.OnlineTrainer.OnlineTrainerModel
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{ActorLogging, Actor, ActorRef, Props}
 import akka.event.LoggingReceive
-import classifiers.Estimator
+import classifiers.Predictor
 import org.apache.spark.SparkContext
 import play.api.Logger
 
@@ -23,11 +23,9 @@ object Director {
 
 }
 
-class Director(sparkContext: SparkContext, eventServer: ActorRef, statisticsServer: ActorRef) extends Actor {
+class Director(sparkContext: SparkContext, eventServer: ActorRef, statisticsServer: ActorRef) extends Actor with ActorLogging {
 
   import Director._
-
-  val log = Logger(this.getClass)
 
   val twitterHandler = context.actorOf(TwitterHandler.props(sparkContext), "twitter-handler")
 
@@ -35,9 +33,9 @@ class Director(sparkContext: SparkContext, eventServer: ActorRef, statisticsServ
 
   val batchTrainer = context.actorOf(BatchTrainer.props(sparkContext, self), "batch-trainer")
 
-  val estimator = new Estimator(sparkContext)
+  val predictor = new Predictor(sparkContext)
 
-  val classifier = context.actorOf(Classifier.props(sparkContext, twitterHandler, onlineTrainer, batchTrainer, eventServer, estimator), "classifier")
+  val classifier = context.actorOf(Classifier.props(sparkContext, twitterHandler, onlineTrainer, batchTrainer, predictor), "classifier")
 
   context.actorOf(CorpusInitializer.props(sparkContext, batchTrainer, onlineTrainer, eventServer, statisticsServer), "corpus-initializer")
 
@@ -45,8 +43,7 @@ class Director(sparkContext: SparkContext, eventServer: ActorRef, statisticsServ
 
     case GetClassifier => sender ! classifier
 
-    case BatchTrainingFinished =>
-      batchTrainer ! GetLatestModel
+    case BatchTrainingFinished => batchTrainer ! GetLatestModel
 
     case OnlineTrainingFinished =>
       context.system.scheduler.schedule(0 seconds, 5 seconds) {

@@ -41,6 +41,7 @@ class CorpusInitializer(sparkContext: SparkContext, batchTrainer: ActorRef, onli
   val csvFilePath = "data/trainingandtestdata/testdata.manual.2009.06.14.csv"
 
   var posTweets: RDD[Tweet] = sparkContext.emptyRDD[Tweet]
+
   var negTweets: RDD[Tweet] = sparkContext.emptyRDD[Tweet]
 
   val totalStreamedTweetSize = streamedTweetsSize

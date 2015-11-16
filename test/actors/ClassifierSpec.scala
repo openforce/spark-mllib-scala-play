@@ -25,9 +25,9 @@ class ClassifierSpec extends TestKit(ActorSystem("ClassifierSpecAS")) with Impli
       val batchTrainer = system.actorOf(Props[BatchTrainerProxyStub], "batch-trainer")
       val eventServer = system.actorOf(Props[EventServerProxyStub], "event-server")
 
-      val estimator = new EstimatorProxyStub()
+      val estimator = new PredictorProxyStub()
 
-      val classifier = system.actorOf(Props(new Classifier(sc, twitterHandler, onlineTrainer, batchTrainer, eventServer, estimator)))
+      val classifier = system.actorOf(Props(new Classifier(sc, twitterHandler, onlineTrainer, batchTrainer, estimator)))
 
       val probe = TestProbe()
 
@@ -52,9 +52,9 @@ class ClassifierSpec extends TestKit(ActorSystem("ClassifierSpecAS")) with Impli
       val batchTrainer = system.actorOf(Props[BatchTrainerProxyStub], s"$actorNamePrefix-batch-trainer")
       val eventServer = system.actorOf(Props[EventServerProxyStub], s"$actorNamePrefix-event-server")
 
-      val estimator = new EstimatorProxyStub()
+      val estimator = new PredictorProxyStub()
 
-      val classifier = system.actorOf(Props(new Classifier(sc, twitterHandler, onlineTrainer, batchTrainer, eventServer, estimator)))
+      val classifier = system.actorOf(Props(new Classifier(sc, twitterHandler, onlineTrainer, batchTrainer, estimator)))
 
       val probe = TestProbe()
 
@@ -74,9 +74,9 @@ class ClassifierSpec extends TestKit(ActorSystem("ClassifierSpecAS")) with Impli
       val batchTrainer = system.actorOf(Props[BatchTrainerProxyStub], s"$actorNamePrefix-batch-trainer")
       val eventServer = system.actorOf(Props[EventServerProxyStub], s"$actorNamePrefix-event-server")
 
-      val estimator = new EstimatorProxyStub()
+      val estimator = new PredictorProxyStub()
 
-      val classifier = system.actorOf(Props(new Classifier(sc, twitterHandler, onlineTrainer, batchTrainer, eventServer, estimator)))
+      val classifier = system.actorOf(Props(new Classifier(sc, twitterHandler, onlineTrainer, batchTrainer, estimator)))
 
       val probe = TestProbe()
 

@@ -7,17 +7,15 @@ import play.api.libs.json.Json
 
 object EventListener {
 
-  def props(out: ActorRef, eventServer: ActorRef) = Props(new EventListener(out, eventServer))
+  def props(out: ActorRef, producer: ActorRef) = Props(new EventListener(out, producer))
 
 }
 
-class EventListener(out: ActorRef, eventServer: ActorRef) extends Actor {
+class EventListener(out: ActorRef, producer: ActorRef) extends Actor {
 
-  override def preStart() = eventServer ! Subscribe
+  override def preStart() = producer ! Subscribe
 
-  override def postStop(): Unit = {
-    eventServer ! Unsubscribe
-  }
+  override def postStop(): Unit = producer ! Unsubscribe
 
   def receive = {
 

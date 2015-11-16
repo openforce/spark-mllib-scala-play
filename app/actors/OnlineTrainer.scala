@@ -18,7 +18,7 @@ import util.SentimentIdentifier
 
 object OnlineTrainer {
 
-  def props(sparkContext: SparkContext, receptionist: ActorRef) = Props(new OnlineTrainer(sparkContext, receptionist: ActorRef))
+  def props(sparkContext: SparkContext, director: ActorRef) = Props(new OnlineTrainer(sparkContext, director: ActorRef))
 
   val dumpCorpus = configuration.getBoolean("ml.corpus.dump").getOrElse(false)
 
@@ -32,7 +32,7 @@ object OnlineTrainer {
 
 trait OnlineTrainerProxy extends Actor
 
-class OnlineTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends Actor with ActorLogging with OnlineTrainerProxy {
+class OnlineTrainer(sparkContext: SparkContext, director: ActorRef) extends Actor with ActorLogging with OnlineTrainerProxy {
 
   import OnlineTrainer._
 
@@ -46,9 +46,7 @@ class OnlineTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends 
 
   import sqlContext.implicits._
 
-  override def postStop() = {
-    ssc.stop(false)
-  }
+  override def postStop() = ssc.stop(false)
 
   override def receive = LoggingReceive {
 
@@ -67,7 +65,7 @@ class OnlineTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends 
         .map(tweet => tweet.toLabeledPoint { _ => tfIdf.tf(tweet.tokens)})
       logisticRegression.map(lr => lr.trainOn(stream))
       ssc.start()
-      receptionist ! OnlineTrainingFinished
+      director ! OnlineTrainingFinished
 
     case GetFeatures(fetchResponse) =>
       log.debug(s"Received GetFeatures message")
