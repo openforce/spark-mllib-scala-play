@@ -4,10 +4,15 @@ import chalk.text.LanguagePack
 import org.apache.spark.mllib.feature.HashingTF
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.mllib.regression.LabeledPoint
-import util.SentimentIdentifier._
+import play.api.libs.json.Json
 import twitter4j.Status
+import util.SentimentIdentifier._
 
 case class LabeledTweet(tweet: String, sentiment: String)
+
+object LabeledTweet {
+  implicit val formats = Json.format[LabeledTweet]
+}
 
 abstract class Tweet extends Serializable with Transformable {
 

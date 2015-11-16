@@ -14,6 +14,7 @@ import org.apache.spark.mllib.classification.LogisticRegressionModel
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
+import play.api.libs.json.{JsPath, Writes, Json}
 import twitter.LabeledTweet
 
 import scala.concurrent.duration._
@@ -29,7 +30,13 @@ object Classifier {
 
   case class Point(tweet: String, tokens: Seq[String])
 
-  case class ClassificationResult(batchModelResult: Array[LabeledTweet], onlineModelResult: Array[LabeledTweet])
+  case class ClassificationResult(batchModelResult: Seq[LabeledTweet], onlineModelResult: Seq[LabeledTweet])
+
+  object ClassificationResult {
+
+    implicit val formatter = Json.format[ClassificationResult]
+
+  }
 
 }
 

@@ -1,12 +1,13 @@
 package controllers
 
 import javax.inject._
+
 import actors.Classifier._
 import actors.Director.GetClassifier
 import actors.FetchResponseHandler.FetchResponseTimeout
 import actors.TrainingModelResponseHandler.TrainingModelRetrievalTimeout
-import actors.{EventListener, EventServer, Director, StatisticsServer}
-import akka.actor.{Props, ActorRef, ActorSystem}
+import actors.{Director, EventListener, EventServer, StatisticsServer}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern._
 import akka.util.Timeout
 import org.apache.spark.SparkContext
@@ -17,10 +18,11 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Action, Controller, WebSocket}
 import play.api.routing.JavaScriptReverseRouter
 import twitter.LabeledTweet
+
 import scala.concurrent.duration._
 
 @Singleton
-class Application @Inject() (system: ActorSystem, sparkContext: SparkContext) extends Controller {
+class Application @Inject()(system: ActorSystem, sparkContext: SparkContext) extends Controller {
 
   val log = Logger(this.getClass)
   val eventServer = system.actorOf(EventServer.props)
@@ -28,7 +30,6 @@ class Application @Inject() (system: ActorSystem, sparkContext: SparkContext) ex
   val director = system.actorOf(Director.props(sparkContext, eventServer, statisticsServer), "receptionist")
 
   implicit val timeout = Timeout(5 seconds)
-  implicit val formats = Json.format[LabeledTweet]
 
   def classify(keyword: String) = Action.async {
     (for {
@@ -38,7 +39,7 @@ class Application @Inject() (system: ActorSystem, sparkContext: SparkContext) ex
         case TrainingModelRetrievalTimeout => throw TimeoutException("Training models timed out.")
         case FetchResponseTimeout => throw TimeoutException("Fetching tweets timed out.")
       }
-    } yield Ok(Json.toJson(classificationResults.onlineModelResult))) recover {
+    } yield Ok(Json.toJson(classificationResults))) recover {
       case to: TimeoutException =>
         eventServer ! to.msg
         GatewayTimeout(to.msg)

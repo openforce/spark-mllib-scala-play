@@ -52,8 +52,8 @@ export class Frontend {
     /**
      * Clear the card list
      */
-    resetCardList() {
-        while (this.twitterCardList.pop('elements') != null);
+    resetCardList($cardListContainer) {
+        while ($cardListContainer.find('twitter-cardlist')[0].pop('elements') != null);
     }
 
     setupWebSockets() {
@@ -82,9 +82,48 @@ export class Frontend {
         });
     }
 
+    showResults($listContainer, results) {
+        var negative = 0;
+        var positive = 0;
+
+        var cardList = $listContainer.find('twitter-cardlist')[0];
+
+        results.forEach((item) => {
+            if (item.sentiment < 0.51) {
+                ++negative;
+            } else {
+                ++positive;
+            }
+
+            cardList.push('elements', item);
+        });
+
+        var ratio = 0;
+        var sentiment = "";
+        var sum = negative + positive;
+
+        if (negative > positive) {
+            ratio = negative / sum;
+            sentiment = 'negative';
+        } else {
+            ratio = positive / sum;
+            sentiment = 'positive';
+        }
+
+        ratio = (Math.round(ratio * 10000) / 100).toString().replace('.', ',');
+
+        $listContainer
+            .find('.precision')
+            .text(`(${ratio}%)`)
+            .end()
+            .removeClass('positive negative')
+            .addClass(sentiment);
+    }
+
     wire() {
-        this.twitterCardList = document.querySelector('twitter-cardlist');
-        var $batchResult = $('.batch-result');
+        var $batchTwitterList = $('.batch-results');
+        var $onlineTwitterList = $('.online-results');
+
         var $content = $('.content');
         var progressBar = document.querySelector('.paper-progress');
         var searchForm = document.querySelector('.search');
@@ -102,44 +141,18 @@ export class Frontend {
         searchForm.addEventListener('submit', (event) => {
             event.preventDefault();
 
-            this.resetCardList();
+            this.resetCardList($batchTwitterList);
+            this.resetCardList($onlineTwitterList);
 
             $content.velocity("scroll", {duration: 350, offset: -175});
 
             this.api.classify(searchBox.value)
                 .then((json) => {
-                    var negative = 0;
-                    var positive = 0;
+                    var batchResults = json.batchModelResult;
+                    var onlineResults = json.onlineModelResult;
 
-                    json.forEach((item) => {
-                        if (item.sentiment < 0.51) {
-                            ++negative;
-                        } else {
-                            ++positive;
-                        }
-
-                        this.twitterCardList.push('elements', item);
-                    });
-
-                    var ratio = 0;
-                    var sentiment = "";
-                    var sum = negative + positive;
-
-                    if (negative > positive) {
-                        ratio = negative / sum;
-                        sentiment = 'negative';
-                    } else {
-                        ratio = positive / sum;
-                        sentiment = 'positive';
-                    }
-
-                    ratio = (Math.round(ratio * 10000) / 100).toString().replace('.', ',');
-
-                    $batchResult
-                        .text(ratio)
-                        .parent()
-                        .removeClass('positive negative')
-                        .addClass(sentiment);
+                    this.showResults($batchTwitterList, batchResults);
+                    this.showResults($onlineTwitterList, onlineResults);
 
                     setTimeout(done, 0);
                 })
