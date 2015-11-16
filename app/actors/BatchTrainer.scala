@@ -29,7 +29,7 @@ class BatchTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends A
 
   import BatchTrainer._
 
-  var model: Transformer = _
+  var model: Option[Transformer] = None
 
   val sqlContext = new SQLContext(sparkContext)
 
@@ -57,15 +57,15 @@ class BatchTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends A
         .setEvaluator(new BinaryClassificationEvaluator)
         .setEstimatorParamMaps(paramGrid)
         .setNumFolds(2)
-      model = cv.fit(data).bestModel
+      model = Some[Transformer](cv.fit(data).bestModel)
       log.info("Batch training finished")
 
       receptionist ! BatchTrainingFinished
 
     case GetLatestModel =>
       log.debug(s"Received GetLatestModel message")
-      sender ! BatchTrainerModel(Some(model))
-      log.debug(s"Returned model $model")
+      sender ! BatchTrainerModel(model)
+      log.debug(s"Returned model ${model}")
 
   }
 

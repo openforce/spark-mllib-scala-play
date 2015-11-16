@@ -22,6 +22,8 @@ object CorpusInitializer {
 
   case object Finish
 
+  type Corpus = RDD[Tweet]
+
   val streamedTweetsSize = configuration.getInt("ml.corpus.initialization.tweets").getOrElse(500)
 
   val streamedCorpus = configuration.getBoolean("ml.corpus.initialization.streamed").getOrElse(true)
@@ -66,11 +68,12 @@ class CorpusInitializer(sparkContext: SparkContext, batchTrainer: ActorRef, onli
       val msg = s"Send ${posTweets.count} positive and ${negTweets.count} negative tweets to batch and online trainer"
       log.info(msg)
       eventServer ! msg
-      val trainMessage = Train(posTweets ++ negTweets)
+      val corpus: Corpus = posTweets ++ negTweets
+      val trainMessage = Train(corpus)
       batchTrainer ! trainMessage
       onlineTrainer ! trainMessage
       context.stop(self)
-      statisticsServer ! (posTweets ++ negTweets)
+      statisticsServer ! corpus
       eventServer ! "Corpus initialization finished"
 
     case LoadFromFs =>

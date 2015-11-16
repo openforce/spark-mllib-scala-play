@@ -5,7 +5,6 @@ import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 import twitter.Tweet
 
-
 object TfIdf {
 
   var tfIdf: Option[TfIdf] = None
@@ -17,7 +16,7 @@ object TfIdf {
     }
 
   def getInstance: TfIdf =
-    tfIdf.getOrElse {
+    tfIdf getOrElse {
       throw new IllegalStateException("TfIdf has not been initialized")
     }
 

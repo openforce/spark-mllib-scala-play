@@ -1,6 +1,7 @@
 package actors
 
 import actors.BatchTrainer.BatchTrainerModel
+import actors.CorpusInitializer.Corpus
 import actors.OnlineTrainer.OnlineTrainerModel
 import actors.StatisticsServer.TrainerType.TrainerType
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
@@ -49,7 +50,7 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
 
   var clients = Set.empty[ActorRef]
 
-  var corpus: RDD[Tweet] = sparkContext.emptyRDD[Tweet]
+  var corpus: Corpus = sparkContext.emptyRDD[Tweet]
 
   var dfCorpus: Option[DataFrame] = None
 
@@ -61,7 +62,7 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
 
     case m: OnlineTrainerModel => testOnlineModel(m)
 
-    case c: RDD[Tweet] =>
+    case c: Corpus =>
       corpus = c
       dfCorpus = Some(c.map{t => (t.tokens.toSeq, t.sentiment)}.toDF("tokens", "label"))
 
@@ -99,19 +100,20 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
     } yield {
       log.debug("Test batch trainer model")
 
-      var total = 0.0
-      var correct = 0.0
       val scoreAndLabels = model
         .transform(dfCorpus)
         .select("tokens", "label", "probability", "prediction")
         .map { case Row(tokens, label: Double, probability: Vector, prediction) =>
-          if (label == prediction) correct += 1
-          total += 1
           (probability(1), label)
         }
 
       val metrics = new BinaryClassificationMetrics(scoreAndLabels)
-      val accuracy = correct / total
+
+      val accuracy = model
+        .transform(dfCorpus)
+        .select("label", "prediction")
+        .map{case Row(label, prediction) => if (label == prediction) 1 else 0}
+        .reduce(_+_) / dfCorpus.count()
 
       val statistics = Statistics(TrainerType.Batch, model.toString(), metrics.areaUnderROC(), accuracy)
       logStatistics(statistics)
