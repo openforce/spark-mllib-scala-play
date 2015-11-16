@@ -2,6 +2,7 @@ package actors
 
 import actors.Director.BatchTrainingFinished
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.event.LoggingReceive
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator
@@ -35,7 +36,7 @@ class BatchTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends A
 
   import sqlContext.implicits._
 
-  override def receive = {
+  override def receive = LoggingReceive {
 
     case Train(corpus: RDD[Tweet]) =>
       log.debug(s"Received Train message with tweets corpus")
@@ -65,7 +66,7 @@ class BatchTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends A
     case GetLatestModel =>
       log.debug(s"Received GetLatestModel message")
       sender ! BatchTrainerModel(model)
-      log.debug(s"Returned model ${model}")
+      log.debug(s"Returned model $model")
 
   }
 

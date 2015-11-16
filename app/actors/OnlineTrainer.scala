@@ -46,8 +46,7 @@ class OnlineTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends 
 
   import sqlContext.implicits._
 
-  override def postStop() = {
-    ssc.stop(false)
+  override def postStop() = { ssc.stop(false)
   }
 
   override def receive = LoggingReceive {
