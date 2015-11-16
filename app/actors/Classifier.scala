@@ -14,7 +14,7 @@ import org.apache.spark.mllib.classification.LogisticRegressionModel
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
-import play.api.libs.json.{JsPath, Writes, Json}
+import play.api.libs.json.Json
 import twitter.LabeledTweet
 
 import scala.concurrent.duration._

@@ -10,9 +10,8 @@ import features.TfIdf
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
 import org.apache.spark.mllib.linalg.Vector
-import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
-import play.api.libs.json.{JsValue, Json, Reads, Writes}
+import play.api.libs.json.{Json, Reads, Writes}
 import twitter.Tweet
 import util.EnumUtils
 
