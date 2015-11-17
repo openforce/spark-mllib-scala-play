@@ -1,7 +1,6 @@
 package actors
 
 import actors.BatchTrainer.BatchTrainerModel
-import actors.CorpusInitializer.Corpus
 import actors.OnlineTrainer.OnlineTrainerModel
 import actors.StatisticsServer.TrainerType.TrainerType
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
@@ -10,6 +9,7 @@ import features.TfIdf
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
 import org.apache.spark.mllib.linalg.Vector
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 import play.api.libs.json.{Json, Reads, Writes}
 import twitter.Tweet
@@ -31,6 +31,8 @@ object StatisticsServer {
 
   }
 
+  case class Corpus(tweets: RDD[Tweet])
+
   case class Statistics(trainer: TrainerType, model: String, areaUnderRoc: Double, accuracy: Double)
 
   object Statistics {
@@ -49,7 +51,7 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
 
   var clients = Set.empty[ActorRef]
 
-  var corpus: Option[Corpus] = None
+  var corpus: Option[RDD[Tweet]] = None
 
   var dfCorpus: Option[DataFrame] = None
 
@@ -61,7 +63,7 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
 
     case onlineModel: OnlineTrainerModel => testOnlineModel(onlineModel)
 
-    case c: Corpus =>
+    case Corpus(c: RDD[Tweet]) =>
       corpus = Some(c)
       dfCorpus = Some(c.map(t => (t.tokens.toSeq, t.sentiment)).toDF("tokens", "label"))
 

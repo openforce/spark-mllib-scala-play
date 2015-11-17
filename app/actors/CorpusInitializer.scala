@@ -1,5 +1,6 @@
 package actors
 
+import actors.StatisticsServer.Corpus
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.event.LoggingReceive
 import org.apache.spark.SparkContext
@@ -21,8 +22,6 @@ object CorpusInitializer {
   case object LoadFromFs
 
   case object Finish
-
-  type Corpus = RDD[Tweet]
 
   val streamedTweetsSize = configuration.getInt("ml.corpus.initialization.tweets").getOrElse(500)
 
@@ -69,13 +68,13 @@ class CorpusInitializer(sparkContext: SparkContext, batchTrainer: ActorRef, onli
       val msg = s"Send ${posTweets.count} positive and ${negTweets.count} negative tweets to batch and online trainer"
       log.info(msg)
       eventServer ! msg
-      val corpus: Corpus = posTweets ++ negTweets
-      corpus.cache()
-      val trainMessage = Train(corpus)
+      val tweets: RDD[Tweet] = posTweets ++ negTweets
+      tweets.cache()
+      val trainMessage = Train(tweets)
       batchTrainer ! trainMessage
       onlineTrainer ! trainMessage
       context.stop(self)
-      statisticsServer ! corpus
+      statisticsServer ! Corpus(tweets)
       eventServer ! "Corpus initialization finished"
 
     case LoadFromFs =>
