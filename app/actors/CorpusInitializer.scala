@@ -70,6 +70,7 @@ class CorpusInitializer(sparkContext: SparkContext, batchTrainer: ActorRef, onli
       log.info(msg)
       eventServer ! msg
       val corpus: Corpus = posTweets ++ negTweets
+      corpus.cache()
       val trainMessage = Train(corpus)
       batchTrainer ! trainMessage
       onlineTrainer ! trainMessage
@@ -91,7 +92,7 @@ class CorpusInitializer(sparkContext: SparkContext, batchTrainer: ActorRef, onli
 
       val data = sparkContext.textFile(csvFilePath)
         .map(line => line.split(",").map(elem => elem.trim))
-        .flatMap(ar => parseLabel(ar(0)).map(label => Tweet(tweetText = ar(5), label = label)))
+        .flatMap(ar => parseLabel(ar(0)).map(label => Tweet(text = ar(5), sentiment = label)))
 
       posTweets = data.filter(t => t.sentiment == 1)
       negTweets = data.filter(t => t.sentiment == 0)

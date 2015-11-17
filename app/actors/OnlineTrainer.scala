@@ -44,6 +44,8 @@ class OnlineTrainer(sparkContext: SparkContext, director: ActorRef) extends Acto
 
   var logisticRegression: Option[StreamingLogisticRegressionWithSGD] = None
 
+  var maybeTfIdf: Option[TfIdf] = None
+
   import sqlContext.implicits._
 
   override def postStop() = ssc.stop(false)
@@ -54,6 +56,7 @@ class OnlineTrainer(sparkContext: SparkContext, director: ActorRef) extends Acto
       log.debug(s"Received Train message with tweets corpus")
       if (dumpCorpus) corpus.map(t => (t.tokens.toSeq, t.sentiment)).toDF().write.parquet(dumpPath)
       val tfIdf = TfIdf(corpus)
+      maybeTfIdf = Some(tfIdf)
       logisticRegression = Some(new StreamingLogisticRegressionWithSGD()
         .setNumIterations(200)
         .setInitialWeights(Vectors.zeros(Features.coefficients))
@@ -69,17 +72,17 @@ class OnlineTrainer(sparkContext: SparkContext, director: ActorRef) extends Acto
 
     case GetFeatures(fetchResponse) =>
       log.debug(s"Received GetFeatures message")
-      val rdd: RDD[String] = sparkContext.parallelize(fetchResponse.tweets)
-      rdd.cache()
-      val features = rdd map { t => (t, TfIdf.getInstance.tfIdf(Tweet(t).tokens)) }
-      sender ! OnlineFeatures(Some(features))
+      val features = maybeTfIdf map { tfIdf =>
+        val rdd: RDD[String] = sparkContext.parallelize(fetchResponse.tweets)
+        rdd.cache()
+        rdd map { t => (t, tfIdf.tfIdf(Tweet(t).tokens)) }
+      }
+      sender ! OnlineFeatures(features)
 
     case GetLatestModel =>
       log.debug(s"Received GetLatestModel message")
-      val m = logisticRegression.map { lr =>
-        lr.latestModel()
-      }
-      sender ! OnlineTrainerModel(m)
+      val maybeModel = logisticRegression.map(_.latestModel())
+      sender ! OnlineTrainerModel(maybeModel)
 
   }
 

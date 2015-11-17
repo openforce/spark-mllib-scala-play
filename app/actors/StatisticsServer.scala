@@ -49,7 +49,7 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
 
   var clients = Set.empty[ActorRef]
 
-  var corpus: Corpus = sparkContext.emptyRDD[Tweet]
+  var corpus: Option[Corpus] = None
 
   var dfCorpus: Option[DataFrame] = None
 
@@ -57,13 +57,13 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
 
   override def receive = LoggingReceive {
 
-    case m: BatchTrainerModel => testBatchModel(m)
+    case batchModel: BatchTrainerModel => testBatchModel(batchModel)
 
-    case m: OnlineTrainerModel => testOnlineModel(m)
+    case onlineModel: OnlineTrainerModel => testOnlineModel(onlineModel)
 
     case c: Corpus =>
-      corpus = c
-      dfCorpus = Some(c.map{t => (t.tokens.toSeq, t.sentiment)}.toDF("tokens", "label"))
+      corpus = Some(c)
+      dfCorpus = Some(c.map(t => (t.tokens.toSeq, t.sentiment)).toDF("tokens", "label"))
 
     case Subscribe =>
       context.watch(sender)
@@ -75,54 +75,49 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
 
   }
 
-  private def testOnlineModel(onlineTrainerModel: OnlineTrainerModel) =
-    onlineTrainerModel.model.map { model =>
+  def testOnlineModel(onlineTrainerModel: OnlineTrainerModel) =
+    for {
+      model <- onlineTrainerModel.model
+      corpus <- corpus
+    } yield {
       log.debug("Test online trainer model")
-
       val tfIdf = TfIdf(corpus)
-      val scoreAndLabels = corpus map { tweet => (model.predict(tfIdf.tfIdf(tweet.tokens)), tweet.sentiment) }
+      val scoreAndLabels = corpus map (tweet => (model.predict(tfIdf.tfIdf(tweet.tokens)), tweet.sentiment))
       val total: Double = scoreAndLabels.count()
       val metrics = new BinaryClassificationMetrics(scoreAndLabels)
       val correct: Double = scoreAndLabels.filter { case ((score, label)) => score == label }.count()
       val accuracy = correct / total
-
       val statistics = Statistics(TrainerType.Online, model.toString(), metrics.areaUnderROC(), accuracy)
       logStatistics(statistics)
-
       sendMessage(statistics)
     }
 
-  private def testBatchModel(batchTrainerModel: BatchTrainerModel) =
+  def testBatchModel(batchTrainerModel: BatchTrainerModel) =
     for {
       model <- batchTrainerModel.model
       dfCorpus <- dfCorpus
     } yield {
       log.debug("Test batch trainer model")
-
       val scoreAndLabels = model
         .transform(dfCorpus)
         .select("tokens", "label", "probability", "prediction")
         .map { case Row(tokens, label: Double, probability: Vector, prediction) =>
           (probability(1), label)
         }
-
       val metrics = new BinaryClassificationMetrics(scoreAndLabels)
-
       val accuracy = model
         .transform(dfCorpus)
         .select("label", "prediction")
-        .map{case Row(label, prediction) => if (label == prediction) 1 else 0}
-        .reduce(_+_) / dfCorpus.count()
-
+        .map { case Row(label, prediction) => if (label == prediction) 1 else 0 }
+        .reduce(_ + _) / dfCorpus.count()
       val statistics = Statistics(TrainerType.Batch, model.toString(), metrics.areaUnderROC(), accuracy)
       logStatistics(statistics)
-
       sendMessage(statistics)
     }
 
-  private def sendMessage(msg: Statistics) = clients.foreach { _ ! msg }
+  def sendMessage(msg: Statistics) = clients.foreach(_ ! msg)
 
-  private def logStatistics(statistics: Statistics): Unit = {
+  def logStatistics(statistics: Statistics): Unit = {
     log.info(s"Trainer type: ${statistics.trainer}")
     log.info(s"Current model: ${statistics.model}")
     log.info(s"Area under the ROC curve: ${statistics.areaUnderRoc}")

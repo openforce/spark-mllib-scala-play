@@ -1,14 +1,9 @@
 package twitter
 
 import org.apache.spark.SparkContext
-import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.twitter.TwitterUtils
-import org.apache.spark.streaming.{Duration, StreamingContext}
 import play.api.Logger
-import twitter4j.auth.OAuthAuthorization
 import twitter4j.conf.Configuration
 import twitter4j.{Query, TwitterFactory}
-
 import scala.collection.JavaConversions._
 
 object TwitterHelper {

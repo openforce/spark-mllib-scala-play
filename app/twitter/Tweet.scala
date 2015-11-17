@@ -11,16 +11,14 @@ import util.SentimentIdentifier._
 case class LabeledTweet(tweet: String, sentiment: String)
 
 object LabeledTweet {
+
   implicit val formats = Json.format[LabeledTweet]
+
 }
 
-abstract class Tweet extends Serializable with Transformable {
+case class Tweet(text: String, sentiment: Double) extends Serializable with Transformable {
 
-  import Tweet._
-
-  val text: String
-
-  def sentiment: Double
+  implicit val languagePack: LanguagePack = chalk.text.LanguagePack.English
 
   def features(implicit hashingTF: HashingTF): Vector = hashingTF.transform(tokens)
 
@@ -30,28 +28,19 @@ abstract class Tweet extends Serializable with Transformable {
 
   def toLabeledPoint(f: String => Vector): LabeledPoint = LabeledPoint(sentiment, f(text))
 
-  override def toString = text
-
 }
 
 
 object Tweet {
 
-  implicit val languagePack: LanguagePack = chalk.text.LanguagePack.English
+  def apply(status: Status): Tweet = Tweet(
+    status.getText,
+    if (isPositive(status.getText)) 1.0 else 0.0
+  )
 
-  def apply(status: Status): Tweet = new Tweet {
-    override val text: String = status.getText
-    override val sentiment: Double = if (isPositive(text)) 1.0 else 0.0
-  }
-
-  def apply(tweetText: String): Tweet = new Tweet {
-    override val text: String = tweetText
-    override val sentiment: Double = if (isPositive(text)) 1.0 else 0.0
-  }
-
-  def apply(tweetText: String, label: Double): Tweet = new Tweet {
-    override val text: String = tweetText
-    override val sentiment: Double = label
-  }
+  def apply(tweetText: String): Tweet = Tweet(
+    tweetText,
+    if (isPositive(tweetText)) 1.0 else 0.0
+  )
 
 }
