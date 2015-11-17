@@ -1,25 +1,33 @@
 <dom-module id="twitter-cardlist">
-    <template>
-        <template is="dom-repeat" items="{{elements}}">
-            <div class="paper-card-container"> <!-- fix for velocity (doesn't work with custom element paper-card) -->
-                <paper-card class$="{{sentiment(item.sentiment)}}">
-                    <div class="card-content">{{item.tweet}}</div>
-                </paper-card>
-            </div>
-        </template>
+  <template>
+    <template is="dom-repeat" items="{{elements}}">
+      <div class$="{{sentiment(item.sentiment)}}">
+        <div class='table-cell'>
+          <span class="fa-stack fa-lg">
+            <i class="fa fa-circle fa-stack-2x"></i>
+            <i class$="{{thumbs(item.sentiment)}}"></i>
+          </span>
+          <div class="tweet-content">
+            <span>{{item.tweet}}</span>
+          </div>
+        </div>
+      </div>
     </template>
-    <script>
-        Polymer({
-            is: 'twitter-cardlist',
-            ready: function() {
-                this.elements = [{
-                    tweet: "asdf"
-                }];
-            },
-            sentiment: function(prediction) {
-                prediction = parseFloat(prediction);
-                return prediction < .3 ? 'negative' : prediction > .7 ? 'positive' : "";
-            }
-        });
-    </script>
+  </template>
+  <script>
+  Polymer({
+    is: 'twitter-cardlist',
+    ready: function() {
+      this.elements = [];
+    },
+    sentiment: function(prediction) {
+      prediction = parseFloat(prediction);
+      return 'tweet ' + (prediction < .51 ? 'negative' : 'positive');
+    },
+    thumbs: function(prediction) {
+      prediction = parseFloat(prediction);
+      return 'fa fa-thumbs-o-' + (prediction < .51 ? 'down' : 'up') + ' fa-stack-1x';
+    }
+  });
+  </script>
 </dom-module>

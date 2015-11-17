@@ -4,7 +4,8 @@ import actors.BatchTrainer.BatchTrainerModel
 import actors.OnlineTrainer._
 import actors.TwitterHandler.{Fetch, FetchResponse}
 import akka.actor.ActorLogging
-import classifiers.EstimatorProxy
+import akka.event.LoggingReceive
+import classifiers.PredictorProxy
 import org.apache.spark.ml.Transformer
 import org.apache.spark.mllib.classification.LogisticRegressionModel
 import org.apache.spark.mllib.linalg.Vector
@@ -22,6 +23,13 @@ class TwitterHandlerProxyStub extends TwitterHandlerProxy with ActorLogging {
   }
 }
 
+class TimingOutTwitterHandlerProxyStub extends TwitterHandlerProxy with ActorLogging {
+  def receive = LoggingReceive {
+    case Fetch(keyword) =>
+      log.debug(s"Doing nothing - forcing timeout")
+  }
+}
+
 class OnlineTrainerProxyStub extends OnlineTrainerProxy with ActorLogging {
   override def receive = {
     case GetFeatures(fetchResponse) =>
@@ -34,6 +42,16 @@ class OnlineTrainerProxyStub extends OnlineTrainerProxy with ActorLogging {
       log.debug(s"Received GetLatestModel message")
       val lr: LogisticRegressionModel = null
       sender ! OnlineTrainerModel(Some(lr))
+  }
+}
+
+class TimingOutOnlineTrainerProxyStub extends OnlineTrainerProxy with ActorLogging {
+  def receive = LoggingReceive {
+    case GetFeatures(fetchResponse) =>
+      log.debug(s"Doing nothing - forcing timeout")
+
+    case GetLatestModel =>
+      log.debug(s"Doing nothing - forcing timeout")
   }
 }
 
@@ -57,7 +75,7 @@ class EventServerProxyStub extends EventServerProxy with ActorLogging {
   }
 }
 
-class EstimatorProxyStub extends EstimatorProxy {
+class PredictorProxyStub extends PredictorProxy {
 
   val lts = Array(LabeledTweet("The new Apple iPhone 6s is awesome", "1.0"), LabeledTweet("Apple is overpriced.", "0.0"))
 

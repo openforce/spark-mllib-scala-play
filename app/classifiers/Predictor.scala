@@ -10,7 +10,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{SQLContext, Row}
 import twitter.{LabeledTweet, Tweet}
 
-trait EstimatorProxy {
+trait PredictorProxy {
 
   def predict(batchTrainingModel: Transformer, fetchResponse: FetchResponse): Array[LabeledTweet]
 
@@ -18,20 +18,19 @@ trait EstimatorProxy {
 
 }
 
-class Estimator(sparkContext: SparkContext) extends EstimatorProxy {
+class Predictor(sparkContext: SparkContext) extends PredictorProxy {
 
   val sqlContext = new SQLContext(sparkContext)
   import sqlContext.implicits._
 
-  override def predict(batchTrainingModel: Transformer, fetchResponse: FetchResponse) = {
-      batchTrainingModel
-        .transform(fetchResponse.tweets.map(t => Point(t, Tweet(t).tokens.toSeq)).toDF())
-        .select("tweet","prediction")
-        .collect()
-        .map { case Row(tweet: String, prediction: Double) =>
-          LabeledTweet(tweet, prediction.toString)
-        }
-  }
+  override def predict(batchTrainingModel: Transformer, fetchResponse: FetchResponse) =
+    batchTrainingModel
+      .transform(fetchResponse.tweets.map(t => Point(t, Tweet(t).tokens.toSeq)).toDF())
+      .select("tweet","prediction")
+      .collect()
+      .map { case Row(tweet: String, prediction: Double) =>
+        LabeledTweet(tweet, prediction.toString)
+      }
 
   override def predict(onlineTrainingModel: LogisticRegressionModel, onlineFeatures: RDD[(String, Vector)]) = {
 

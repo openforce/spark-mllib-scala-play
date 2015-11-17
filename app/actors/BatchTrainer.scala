@@ -1,17 +1,17 @@
 package actors
 
-import actors.Receptionist.BatchTrainingFinished
+import actors.Director.BatchTrainingFinished
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.event.LoggingReceive
 import org.apache.spark.SparkContext
-import org.apache.spark.ml.{Pipeline, Transformer}
 import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator
 import org.apache.spark.ml.feature.HashingTF
 import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
+import org.apache.spark.ml.{Pipeline, Transformer}
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SQLContext}
-import play.api.Play._
 import twitter.Tweet
 
 object BatchTrainer {
@@ -30,13 +30,13 @@ class BatchTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends A
 
   import BatchTrainer._
 
-  var model: Transformer = _
+  var model: Option[Transformer] = None
 
   val sqlContext = new SQLContext(sparkContext)
 
   import sqlContext.implicits._
 
-  override def receive = {
+  override def receive = LoggingReceive {
 
     case Train(corpus: RDD[Tweet]) =>
       log.debug(s"Received Train message with tweets corpus")
@@ -58,14 +58,14 @@ class BatchTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends A
         .setEvaluator(new BinaryClassificationEvaluator)
         .setEstimatorParamMaps(paramGrid)
         .setNumFolds(2)
-      model = cv.fit(data).bestModel
+      model = Some[Transformer](cv.fit(data).bestModel)
       log.info("Batch training finished")
 
       receptionist ! BatchTrainingFinished
 
     case GetLatestModel =>
       log.debug(s"Received GetLatestModel message")
-      sender ! BatchTrainerModel(Some(model))
+      sender ! BatchTrainerModel(model)
       log.debug(s"Returned model $model")
 
   }

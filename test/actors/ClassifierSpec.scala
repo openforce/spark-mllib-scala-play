@@ -1,45 +1,105 @@
 package actors
 
 import actors.Classifier.{ClassificationResult, Classify}
+import actors.FetchResponseHandler.FetchResponseTimeout
+import actors.TrainingModelResponseHandler.TrainingModelRetrievalTimeout
 import akka.actor.{ActorSystem, Props}
-import akka.testkit.{TestProbe, ImplicitSender, TestKit}
+import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import org.apache.spark.{SparkConf, SparkContext}
-import org.scalatest.{MustMatchers, WordSpecLike}
+import org.scalatest.{BeforeAndAfterEach, MustMatchers, WordSpecLike}
 import twitter.LabeledTweet
+
 import scala.concurrent.duration._
 
-class ClassifierSpec extends TestKit(ActorSystem("ClassifierSpecAS")) with ImplicitSender with WordSpecLike with MustMatchers {
+class ClassifierSpec extends TestKit(ActorSystem("ClassifierSpecAS")) with ImplicitSender with WordSpecLike with MustMatchers with BeforeAndAfterEach {
+
+  var sc: SparkContext = _
 
   "A classifier" should {
 
+
     "return a list of classified tweets" in {
-
-      val probe1 = TestProbe()
-      val probe2 = TestProbe()
-
-      val conf = new SparkConf().setAppName("test").setMaster("local")
-        .set("spark.driver.allowMultipleContexts", "true")
-      val sc = new SparkContext(conf)
 
       val twitterHandler = system.actorOf(Props[TwitterHandlerProxyStub], "twitter-handler")
       val onlineTrainer = system.actorOf(Props[OnlineTrainerProxyStub], "online-trainer")
       val batchTrainer = system.actorOf(Props[BatchTrainerProxyStub], "batch-trainer")
       val eventServer = system.actorOf(Props[EventServerProxyStub], "event-server")
 
-      val estimator = new EstimatorProxyStub()
+      val estimator = new PredictorProxyStub()
 
-      val classifier = system.actorOf(Props(new Classifier(sc, twitterHandler, onlineTrainer, batchTrainer, eventServer, estimator)))
+      val classifier = system.actorOf(Props(new Classifier(sc, twitterHandler, onlineTrainer, batchTrainer, estimator)))
 
-      within(4 seconds) {
-        probe1.send(classifier, Classify("apple"))
-        val result = probe1.expectMsgType[ClassificationResult]
-        val onlineModelResult: Array[LabeledTweet] = Array(LabeledTweet("The new Apple iPhone 6s is awesome", "1.0"), LabeledTweet("Apple is overpriced.", "0.0"))
-        val batchModelResult: Array[LabeledTweet] = Array(LabeledTweet("The new Apple iPhone 6s is awesome", "1.0"), LabeledTweet("Apple is overpriced.", "0.0"))
+      val probe = TestProbe()
+
+      within(1 seconds) {
+        probe.send(classifier, Classify("apple"))
+        val result = probe.expectMsgType[ClassificationResult]
+        val labeledTweets = Array(LabeledTweet("The new Apple iPhone 6s is awesome", "1.0"), LabeledTweet("Apple is overpriced.", "0.0"))
+        val onlineModelResult, batchModelResult = labeledTweets
 
         result.batchModelResult must equal(batchModelResult)
         result.onlineModelResult must equal(onlineModelResult)
       }
     }
+
+    "return a FetchResponseTimeout when timeout in twitter handler is exceeded" in {
+
+      val sc = createSparkContext()
+
+      val actorNamePrefix = "twitter-timing-out"
+      val twitterHandler = system.actorOf(Props[TimingOutTwitterHandlerProxyStub], s"$actorNamePrefix-twitter-handler")
+      val onlineTrainer = system.actorOf(Props[OnlineTrainerProxyStub], s"$actorNamePrefix-online-trainer")
+      val batchTrainer = system.actorOf(Props[BatchTrainerProxyStub], s"$actorNamePrefix-batch-trainer")
+      val eventServer = system.actorOf(Props[EventServerProxyStub], s"$actorNamePrefix-event-server")
+
+      val estimator = new PredictorProxyStub()
+
+      val classifier = system.actorOf(Props(new Classifier(sc, twitterHandler, onlineTrainer, batchTrainer, estimator)))
+
+      val probe = TestProbe()
+
+      within(2 second, 3 seconds) {
+        probe.send(classifier, Classify("apple"))
+        probe.expectMsg(FetchResponseTimeout)
+      }
+    }
+
+
+
+    "return a TrainingModelRetrievalTimeout when timeout in training model response handler is exceeded" in {
+
+      val actorNamePrefix = "trainer-timing-out"
+      val twitterHandler = system.actorOf(Props[TwitterHandlerProxyStub], s"$actorNamePrefix-twitter-handler")
+      val onlineTrainer = system.actorOf(Props[TimingOutOnlineTrainerProxyStub], s"$actorNamePrefix-online-trainer")
+      val batchTrainer = system.actorOf(Props[BatchTrainerProxyStub], s"$actorNamePrefix-batch-trainer")
+      val eventServer = system.actorOf(Props[EventServerProxyStub], s"$actorNamePrefix-event-server")
+
+      val estimator = new PredictorProxyStub()
+
+      val classifier = system.actorOf(Props(new Classifier(sc, twitterHandler, onlineTrainer, batchTrainer, estimator)))
+
+      val probe = TestProbe()
+
+      within(3 second, 4 seconds) {
+        probe.send(classifier, Classify("apple"))
+        probe.expectMsg(4 seconds, TrainingModelRetrievalTimeout)
+      }
+    }
+
   }
 
+  override protected def beforeEach() = {
+    sc = createSparkContext()
+  }
+
+  override protected def afterEach() = {
+    sc.stop()
+  }
+
+  def createSparkContext(): SparkContext = {
+    val conf = new SparkConf().setAppName("test").setMaster("local")
+      .set("spark.driver.allowMultipleContexts", "true")
+    val sc = new SparkContext(conf)
+    sc
+  }
 }

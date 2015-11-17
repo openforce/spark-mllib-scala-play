@@ -28,6 +28,10 @@
         <appender ref="STDOUT" />
     </logger>
 
+  <logger name="org.apache.spark-project" level="ERROR">
+    <appender ref="STDOUT" />
+  </logger>
+
     <logger name="org.apache.hadoop" level="WARN">
         <appender ref="STDOUT" />
     </logger>

@@ -1,7 +1,8 @@
 package actors
 
-import actors.Receptionist.OnlineTrainingFinished
+import actors.Director.OnlineTrainingFinished
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.event.LoggingReceive
 import features.{Features, TfIdf}
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.classification.{LogisticRegressionModel, StreamingLogisticRegressionWithSGD}
@@ -17,7 +18,7 @@ import util.SentimentIdentifier
 
 object OnlineTrainer {
 
-  def props(sparkContext: SparkContext, receptionist: ActorRef) = Props(new OnlineTrainer(sparkContext, receptionist: ActorRef))
+  def props(sparkContext: SparkContext, director: ActorRef) = Props(new OnlineTrainer(sparkContext, director: ActorRef))
 
   val dumpCorpus = configuration.getBoolean("ml.corpus.dump").getOrElse(false)
 
@@ -31,7 +32,7 @@ object OnlineTrainer {
 
 trait OnlineTrainerProxy extends Actor
 
-class OnlineTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends Actor with ActorLogging with OnlineTrainerProxy {
+class OnlineTrainer(sparkContext: SparkContext, director: ActorRef) extends Actor with ActorLogging with OnlineTrainerProxy {
 
   import OnlineTrainer._
 
@@ -41,40 +42,47 @@ class OnlineTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends 
 
   val sqlContext = new SQLContext(sparkContext)
 
-  var logisticRegression: StreamingLogisticRegressionWithSGD = _
+  var logisticRegression: Option[StreamingLogisticRegressionWithSGD] = None
+
+  var maybeTfIdf: Option[TfIdf] = None
 
   import sqlContext.implicits._
 
-  override def receive = {
+  override def postStop() = ssc.stop(false)
+
+  override def receive = LoggingReceive {
 
     case Train(corpus) =>
       log.debug(s"Received Train message with tweets corpus")
       if (dumpCorpus) corpus.map(t => (t.tokens.toSeq, t.sentiment)).toDF().write.parquet(dumpPath)
       val tfIdf = TfIdf(corpus)
-      logisticRegression = new StreamingLogisticRegressionWithSGD()
+      maybeTfIdf = Some(tfIdf)
+      logisticRegression = Some(new StreamingLogisticRegressionWithSGD()
         .setNumIterations(200)
         .setInitialWeights(Vectors.zeros(Features.coefficients))
-        .setStepSize(1.0)
+        .setStepSize(1.0))
       log.info(s"Start twitter stream for online training")
       val stream = TwitterUtils.createStream(ssc, twitterAuth, filters = SentimentIdentifier.sentimentEmoticons)
         .filter(t => t.getUser.getLang == "en" && !t.isRetweet)
         .map { Tweet(_) }
         .map(tweet => tweet.toLabeledPoint { _ => tfIdf.tf(tweet.tokens)})
-      logisticRegression.trainOn(stream)
+      logisticRegression.map(lr => lr.trainOn(stream))
       ssc.start()
-      receptionist ! OnlineTrainingFinished
+      director ! OnlineTrainingFinished
 
     case GetFeatures(fetchResponse) =>
       log.debug(s"Received GetFeatures message")
-      val rdd: RDD[String] = sparkContext.parallelize(fetchResponse.tweets)
-      rdd.cache()
-      val features = rdd map { t => (t, TfIdf.getInstance.tfIdf(Tweet(t).tokens)) }
-      sender ! OnlineFeatures(Some(features))
+      val features = maybeTfIdf map { tfIdf =>
+        val rdd: RDD[String] = sparkContext.parallelize(fetchResponse.tweets)
+        rdd.cache()
+        rdd map { t => (t, tfIdf.tfIdf(Tweet(t).tokens)) }
+      }
+      sender ! OnlineFeatures(features)
 
     case GetLatestModel =>
       log.debug(s"Received GetLatestModel message")
-      val lr = logisticRegression.latestModel()
-      sender ! OnlineTrainerModel(Some(lr))
+      val maybeModel = logisticRegression.map(_.latestModel())
+      sender ! OnlineTrainerModel(maybeModel)
 
   }
 

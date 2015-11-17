@@ -2,13 +2,13 @@ import play.sbt.PlayScala
 
 name := """spark-mllib-scala-play"""
 
-version := "1.0"
+version := "0.1.0"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 
 scalaVersion := "2.11.7"
 
-val sparkVersion = "1.5.1"
+val sparkVersion = "1.5.2"
 
 // Needed as SBT's classloader doesn't work well with Spark
 fork := true

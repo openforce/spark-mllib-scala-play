@@ -13,6 +13,7 @@
 /.settings
 /.settings
 /.target
+/.sbtopts
 /RUNNING_PID
 /atlassian-ide-plugin.xml
 /bin

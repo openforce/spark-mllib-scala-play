@@ -9,22 +9,61 @@ export class Frontend {
         this.chart = new Chart();
     }
 
+    handleScrolling() {
+        var $window = $(window);
+        var $navbar = $('.navbar');
+        var $pushDown = $('.push-down');
+        var $headings = $('.headings');
+        var $searchBox = $('.search');
+        var height;
+
+        var onResize = () => {
+            height = $window.innerHeight();
+        };
+
+        var onScroll = () => {
+            var scrollTop = $window.scrollTop();
+
+            if (scrollTop > 180) {
+                $pushDown.addClass('push-down-small');
+                $navbar.removeClass('navbar-top').addClass('show-heading');
+                $headings.addClass('invisible');
+                $searchBox.addClass('show-results');
+            } else {
+                $pushDown.removeClass('push-down-small');
+                $navbar.addClass('navbar-top').removeClass('show-heading');
+                $headings.removeClass('invisible');
+                $searchBox.removeClass('show-results');
+            }
+
+            if (scrollTop > 250) {
+                $navbar.addClass('navbar-background');
+            } else {
+                $navbar.removeClass('navbar-background');
+            }
+        };
+
+        $window.on('scroll', onScroll).on('resize', onResize);
+
+        onScroll();
+        onResize();
+    }
+
     /**
      * Clear the card list
      */
-    resetCardList() {
-        while (this.twitterCardList.pop('elements') != null);
+    resetCardList($cardListContainer) {
+        while ($cardListContainer.find('twitter-cardlist')[0].pop('elements') != null);
     }
 
     setupWebSockets() {
         var eventToast = document.querySelector('#event-toast');
-        var eventLog = document.querySelector('event-log');
+        var metrics = document.querySelector("trainer-metrics");
 
         new WebSocket("#socket").on("onopen", (socket) => {
             console.log('Establish connection');
         }).on('onmessage', (socket, message) => {
             console.log(message.detail);
-            eventLog.push('elements', message.detail);
             eventToast.text = message.detail;
             eventToast.show();
         });
@@ -35,18 +74,63 @@ export class Frontend {
             var data = JSON.parse(message.detail);
 
             console.log(data);
-            if(data.trainer == "Online") {
-              this.chart.push(data.accuracy);
+            metrics.update(data);
+
+            if (data.trainer == "Online") {
+                this.chart.push(data.accuracy);
             }
         });
     }
 
+    showResults($listContainer, results) {
+        var negative = 0;
+        var positive = 0;
+
+        var cardList = $listContainer.find('twitter-cardlist')[0];
+
+        results.forEach((item) => {
+            if (item.sentiment < 0.51) {
+                ++negative;
+            } else {
+                ++positive;
+            }
+
+            cardList.push('elements', item);
+        });
+
+        var ratio = 0;
+        var sentiment = "";
+        var sum = negative + positive;
+
+        if (negative > positive) {
+            ratio = negative / sum;
+            sentiment = 'negative';
+        } else {
+            ratio = positive / sum;
+            sentiment = 'positive';
+        }
+
+        ratio = (Math.round(ratio * 10000) / 100).toString().replace('.', ',');
+
+        $listContainer
+            .find('.precision')
+            .text(`(${ratio}%)`)
+            .end()
+            .removeClass('positive negative')
+            .addClass(sentiment);
+    }
+
     wire() {
-        this.twitterCardList = document.querySelector('twitter-cardlist');
+        var $batchTwitterList = $('.batch-results');
+        var $onlineTwitterList = $('.online-results');
+
+        var $content = $('.content');
         var progressBar = document.querySelector('.paper-progress');
-        var searchForm = document.querySelector('.search-box');
+        var searchForm = document.querySelector('.search');
         var searchBox = document.querySelector('paper-input');
         var container = document.querySelector('#mainContainer');
+
+        this.handleScrolling();
 
         this.chart.wire();
         this.setupWebSockets();
@@ -55,32 +139,30 @@ export class Frontend {
          * Wire the frontend
          */
         searchForm.addEventListener('submit', (event) => {
-
             event.preventDefault();
 
-            this.resetCardList();
+            this.resetCardList($batchTwitterList);
+            this.resetCardList($onlineTwitterList);
+
+            $content.velocity("scroll", {duration: 350, offset: -175});
 
             this.api.classify(searchBox.value)
                 .then((json) => {
-                    console.log(json);
-                    json.forEach((item) => this.twitterCardList.push('elements', item));
+                    var batchResults = json.batchModelResult;
+                    var onlineResults = json.onlineModelResult;
+
+                    this.showResults($batchTwitterList, batchResults);
+                    this.showResults($onlineTwitterList, onlineResults);
+
                     setTimeout(done, 0);
                 })
                 .catch((ex) => {
                     console.log(ex);
                 });
-
-            Velocity(searchBox.parentNode, 'scroll', {
-                container: container,
-                offset: -75,
-                duration: 400
-            });
-
-            setTimeout(() => Velocity(progressBar, "fadeIn", {duration: 200}));
         });
 
         // fade out elements
-        Velocity(progressBar, "fadeOut", {duration: 0});
+        $.Velocity(progressBar, "fadeOut", {duration: 0});
 
         var done = () => {
             // get all paper cards (each paper card represents one tweet)
@@ -93,7 +175,7 @@ export class Frontend {
              */
             var fadeIn = (n, duration) => {
                 if (n < paperCards.length) {
-                    Velocity(paperCards[n], "fadeIn", {
+                    $.Velocity(paperCards[n], "fadeIn", {
                         duration: duration,
                         display: 'inline-block'
                     });
@@ -106,7 +188,7 @@ export class Frontend {
             fadeIn(0, 300);
 
             // fade out the paper-progress
-            Velocity(progressBar, "fadeOut", {duration: 150});
+            $.Velocity(progressBar, "fadeOut", {duration: 150});
         };
     }
 

@@ -1,13 +1,12 @@
 package actors
 
-import java.nio.file.{Files, Paths}
-
-import akka.actor.{ActorLogging, Actor, ActorRef, Props}
+import actors.StatisticsServer.Corpus
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.event.LoggingReceive
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.streaming.twitter.TwitterUtils
 import org.apache.spark.streaming.{Duration, StreamingContext}
-import play.api.Logger
 import play.api.Play.{configuration, current}
 import twitter.Tweet
 import twitter4j.auth.OAuthAuthorization
@@ -41,11 +40,17 @@ class CorpusInitializer(sparkContext: SparkContext, batchTrainer: ActorRef, onli
   val csvFilePath = "data/trainingandtestdata/testdata.manual.2009.06.14.csv"
 
   var posTweets: RDD[Tweet] = sparkContext.emptyRDD[Tweet]
+
   var negTweets: RDD[Tweet] = sparkContext.emptyRDD[Tweet]
 
   val totalStreamedTweetSize = streamedTweetsSize
 
   var stop = false
+
+
+  override def postStop() = {
+    ssc.stop(false)
+  }
 
   override def preStart() = {
     if(streamedCorpus)
@@ -54,24 +59,25 @@ class CorpusInitializer(sparkContext: SparkContext, batchTrainer: ActorRef, onli
       self ! LoadFromFs
   }
 
-  override def receive = {
+  override def receive = LoggingReceive {
 
-    case Finish => {
+    case Finish =>
       log.debug(s"Received Finish message")
       log.info(s"Terminating streaming context...")
-      ssc.stop(false, true)
+      ssc.stop(stopSparkContext = false, stopGracefully = true)
       val msg = s"Send ${posTweets.count} positive and ${negTweets.count} negative tweets to batch and online trainer"
       log.info(msg)
       eventServer ! msg
-      val trainMessage = Train(posTweets ++ negTweets)
+      val tweets: RDD[Tweet] = posTweets ++ negTweets
+      tweets.cache()
+      val trainMessage = Train(tweets)
       batchTrainer ! trainMessage
       onlineTrainer ! trainMessage
       context.stop(self)
-      statisticsServer ! (posTweets ++ negTweets)
+      statisticsServer ! Corpus(tweets)
       eventServer ! "Corpus initialization finished"
-    }
 
-    case LoadFromFs => {
+    case LoadFromFs =>
       log.debug(s"Received LoadFromFs message")
       val msg = s"Load tweets corpus from file system..."
       log.info(msg)
@@ -85,15 +91,15 @@ class CorpusInitializer(sparkContext: SparkContext, batchTrainer: ActorRef, onli
 
       val data = sparkContext.textFile(csvFilePath)
         .map(line => line.split(",").map(elem => elem.trim))
-        .flatMap(ar => parseLabel(ar(0)).map(label => Tweet(tweetText = ar(5), label = label)))
+        .flatMap(ar => parseLabel(ar(0)).map(label => Tweet(text = ar(5), sentiment = label)))
 
       posTweets = data.filter(t => t.sentiment == 1)
       negTweets = data.filter(t => t.sentiment == 0)
 
       self ! Finish
-    }
 
-    case InitFromStream => {
+
+    case InitFromStream =>
       log.debug(s"Received InitFromStream message")
       val msg = s"Initialize tweets corpus from twitter stream..."
       log.info(msg)
@@ -125,7 +131,5 @@ class CorpusInitializer(sparkContext: SparkContext, batchTrainer: ActorRef, onli
       def reachedMax(s: RDD[Tweet]) = s.count >= totalStreamedTweetSize / 2
       def stopCollection = reachedMax(posTweets) && reachedMax(negTweets) && !stop
     }
-  }
-
 
 }

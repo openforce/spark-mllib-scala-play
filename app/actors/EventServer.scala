@@ -1,6 +1,6 @@
 package actors
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor._
 import akka.event.LoggingReceive
 
 object EventServer {
@@ -17,10 +17,7 @@ class EventServer extends Actor with ActorLogging with EventServerProxy {
 
   def receive = LoggingReceive {
 
-    case msg: String =>
-      clients.foreach { c =>
-        c ! msg
-      }
+    case msg: String => clients.foreach(_ ! msg)
 
     case Subscribe =>
       context.watch(sender)

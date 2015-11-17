@@ -1,0 +1,52 @@
+<configuration>
+
+    <conversionRule conversionWord="coloredLevel" converterClass="play.api.Logger$ColoredLevel" />
+
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>${application.home:-.}/logs/application.log</file>
+        <encoder>
+            <pattern>%date{ISO8601} [%level] %logger %thread - %message%xException%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%date{ISO8601} - %coloredLevel %logger{15} - %message%n%xException{5}</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="play" level="DEBUG" />
+    <logger name="application" level="DEBUG" />
+
+    <!-- Set logging for all Akka library classes to INFO -->
+    <logger name="akka" level="INFO" />
+    <!-- Set a specific actor to DEBUG -->
+    <logger name="actors" level="DEBUG" />
+    <logger name="twitter" level="DEBUG" />
+
+    <logger name="org.apache.spark" level="ERROR">
+        <appender ref="STDOUT" />
+    </logger>
+
+  <logger name="org.apache.spark-project" level="ERROR">
+    <appender ref="STDOUT" />
+  </logger>
+
+    <logger name="org.apache.hadoop" level="WARN">
+        <appender ref="STDOUT" />
+    </logger>
+
+    <logger name="breeze.optimize" level="WARN">
+        <appender ref="STDOUT" />
+    </logger>
+
+    <logger name="twitter.Tweet" level="WARN">
+        <appender ref="STDOUT" />
+    </logger>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT" />
+        <appender-ref ref="FILE" />
+    </root>
+
+</configuration>
