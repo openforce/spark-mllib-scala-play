@@ -2,7 +2,7 @@ import play.sbt.PlayScala
 
 name := """spark-mllib-scala-play"""
 
-version := "1.0"
+version := "0.1.0"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 
