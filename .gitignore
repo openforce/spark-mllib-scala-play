@@ -35,3 +35,5 @@ data/derby.log
 data/metastore_db/
 data/trainingandtestdata.bkp/
 .sbtopts
+.ensime
+.ensime_cache/
