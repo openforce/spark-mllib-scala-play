@@ -26,9 +26,11 @@ object TwitterHandler {
         .setOAuthAccessTokenSecret(accessTokenSecret)
         .setUseSSL(true)
         .build()).getOrElse(throw new IllegalStateException(
-          """****************************************************************************************************
+          """
+            |****************************************************************************************************
             | Tokens for Twitter authentication are missing in your application.conf!
             | Please get your tokens from https://dev.twitter.com/oauth/overview/application-owner-access-tokens
+            | and enter them in conf/application.conf.
             |****************************************************************************************************""".stripMargin))
 
   def props(sparkContext: SparkContext, configuration: Configuration = config) = Props(new TwitterHandler(sparkContext, configuration))
