@@ -11,20 +11,25 @@ import twitter4j.conf.{Configuration, ConfigurationBuilder}
 
 object TwitterHandler {
 
-  def consumerKey = configuration.getString("twitter.consumer.key")
-  def consumerSecret = configuration.getString("twitter.consumer.secret")
-  def accessTokenKey = configuration.getString("twitter.access-token.key")
-  def accessTokenSecret = configuration.getString("twitter.access-token.secret")
-
   def config: Configuration =
-    new ConfigurationBuilder()
-      .setDebugEnabled(true)
-      .setOAuthConsumerKey(consumerKey.getOrElse(""))
-      .setOAuthConsumerSecret(consumerSecret.getOrElse(""))
-      .setOAuthAccessToken(accessTokenKey.getOrElse(""))
-      .setOAuthAccessTokenSecret(accessTokenSecret.getOrElse(""))
-      .setUseSSL(true)
-      .build()
+    (for {
+      consumerKey <- configuration.getString("twitter.consumer.key")
+      consumerSecret <- configuration.getString("twitter.consumer.secret")
+      accessTokenKey <- configuration.getString("twitter.access-token.key")
+      accessTokenSecret <- configuration.getString("twitter.access-token.secret")
+    } yield
+        new ConfigurationBuilder()
+        .setDebugEnabled(true)
+        .setOAuthConsumerKey(consumerKey)
+        .setOAuthConsumerSecret(consumerSecret)
+        .setOAuthAccessToken(accessTokenKey)
+        .setOAuthAccessTokenSecret(accessTokenSecret)
+        .setUseSSL(true)
+        .build()).getOrElse(throw new IllegalStateException(
+          """****************************************************************************************************
+            | Tokens for Twitter authentication are missing in your application.conf!
+            | Please get your tokens from https://dev.twitter.com/oauth/overview/application-owner-access-tokens
+            |****************************************************************************************************""".stripMargin))
 
   def props(sparkContext: SparkContext, configuration: Configuration = config) = Props(new TwitterHandler(sparkContext, configuration))
 
