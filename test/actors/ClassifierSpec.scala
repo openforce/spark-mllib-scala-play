@@ -5,15 +5,17 @@ import actors.FetchResponseHandler.FetchResponseTimeout
 import actors.TrainingModelResponseHandler.TrainingModelRetrievalTimeout
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
-import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest.{BeforeAndAfterEach, MustMatchers, WordSpecLike}
 import twitter.LabeledTweet
 
 import scala.concurrent.duration._
 
-class ClassifierSpec extends TestKit(ActorSystem("ClassifierSpecAS")) with ImplicitSender with WordSpecLike with MustMatchers with BeforeAndAfterEach {
-
-  var sc: SparkContext = _
+class ClassifierSpec extends TestKit(ActorSystem("ClassifierSpecAS"))
+  with ImplicitSender
+  with WordSpecLike
+  with MustMatchers
+  with BeforeAndAfterEach
+  with SparkTestContext {
 
   "A classifier" should {
 
@@ -43,8 +45,6 @@ class ClassifierSpec extends TestKit(ActorSystem("ClassifierSpecAS")) with Impli
     }
 
     "return a FetchResponseTimeout when timeout in twitter handler is exceeded" in {
-
-      val sc = createSparkContext()
 
       val actorNamePrefix = "twitter-timing-out"
       val twitterHandler = system.actorOf(Props[TimingOutTwitterHandlerProxyStub], s"$actorNamePrefix-twitter-handler")
@@ -88,18 +88,5 @@ class ClassifierSpec extends TestKit(ActorSystem("ClassifierSpecAS")) with Impli
 
   }
 
-  override protected def beforeEach() = {
-    sc = createSparkContext()
-  }
 
-  override protected def afterEach() = {
-    sc.stop()
-  }
-
-  def createSparkContext(): SparkContext = {
-    val conf = new SparkConf().setAppName("test").setMaster("local")
-      .set("spark.driver.allowMultipleContexts", "true")
-    val sc = new SparkContext(conf)
-    sc
-  }
 }
