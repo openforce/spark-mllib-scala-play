@@ -84,3 +84,6 @@ cleanupCommands in console :=
      |sc.stop()
    """.stripMargin
 
+
+
+fork in run := true
