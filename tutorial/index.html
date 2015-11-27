@@ -43,7 +43,7 @@ If you want to start it via SBT use <code>sbt run</code> and navigate your brows
     <h2 id="classification-workflow">Classification Workflow</h2>
 
     <p>
-        The following diagram shows how the actor communication workflow for classification looks like:.
+        The following diagram shows the actor communication workflow for classification:
     </p>
 
     <img src="tutorial/images/actors.jpg"></img>
@@ -60,8 +60,44 @@ Once the <code>TwitterHandler</code> has fetched some Tweets, the <code>FetchRes
 
 The <a href="#code/app/actors/Classifier.scala">FetchResponseHandler</a> creates a <code>TrainingModelResponseHandler</code> actor and tells the <a href="#code/app/actors/BatchTrainer.scala">BatchTrainer</a> and <a href="#code/app/actors/OnlineTrainer.scala">OnlineTrainer</a> to pass the latest model to <code>TrainingModelResponseHandler</code>. It registers itself as a monitor for <code>TrainingModelResponseHandler</code> and when this actor terminates it stops itself as well.
 
-The <code>TrainingModelResponseHandler</code> collects the models and vectorized Tweets makes predictions and sends the results to the original sender (the <a href="#code/app/controllers/Application.scala">Application</a> controller). The original sender is passed through the ephemeral (short lived) actors, indicated by the yellow dotted line in the figure above.
+The <code>TrainingModelResponseHandler</code> collects the models, vectorizes Tweets makes predictions and sends the results to the original sender (the <a href="#code/app/controllers/Application.scala">Application</a> controller). The original sender is passed through the ephemeral (short lived) actors, indicated by the yellow dotted line in the figure above.
 
+</div>
+<div>
+  <h2>Tell don't Ask</h2>
+  <p>
+  The standard way of sending messages to actors in Akka is using the tell pattern, which is a fire-and-forget approach. Alternatively Akka
+  supports the ask pattern, which returns a future as response for a sent message. This is very convenient for some scenarios like
+  bridging a Play controller with an Akka actor system as you can see implemented in the <a href="#code/app/controllers/Application.scala">Application</a> controller. By using a future the application
+  doesn't have to block the current thread to handle the task. This saves resources which can be used for example to handle more requests concurrently.
+  However there are tradeoffs that come with the ask pattern. Every time an actor asks another actor for a response using futures a new <code>PromiseActorRef</code> is created. This is a waste of resources.
+  Additionally using the ask pattern requires a timeout to be defined. This leads often to hard to debug applications, as stacktraces don't give you a clue which actor timed out. This is due to the fact, that futures
+  don't have names like actors. In a larger application it is also difficult to set the right value for a timeout so that various timeouts set at different places in the application work together in a sensible way.
+  </p>
+  <p>
+  To avoid all that it is preferable to use the fire-and-forget approach with the lightweight tell pattern. In this application we used the so called <bold>"cameo pattern"</bold> defined by Jamie Allen in his book <a href="http://shop.oreilly.com/product/0636920028789.do">Effective Akka</a>.
+  </p>
+  <p>
+  All participants of this pattern can be found in the <a href="#code/app/actors/Classifier.scala">Classifier</a> file. The <code>Classifier</code> creates the <code>FetchResponseHandler</code>
+  and passes its reference to the <code>TwitterHandler</code> telling it to send the fetched tweets to the handler instead of itself.
+  <p>When we provide a different sender reference we cannot use the exclamation mark syntax <code>twitterHandler ! Fetch(token)</code> but
+  have to use the <code>tell</code> method directly <code>twitterHandler.tell(Fetch(token), handler)</code>.</p>
+
+  The <code>FetchResponseHandler</code> creates a <code>TrainingModelResponseHandler</code> which it sends to the <code>OnlineTrainer</code> and <code>BatchTrainer</code> as sender reference.
+  The <code>TrainingModelResponseHandler</code> is the actor which collects all results and only sends the final <code>ClassificationResult</code> message to the original sender when all result have been received.
+  The original sender (<a href="#code/app/controllers/Application">Application</a> controller) is passed through all of these actors.
+  </p>
+
+  <p>
+    You might have noticed the timeout messages <code>FetchResponseTimeout</code> and <code>TrainingModelRetrievalTimeout</code> in the <a href="#code/app/actors/Classifier.scala">Classifier</a> file.
+    As mentioned earlier with the ask pattern you have to define an implicit timeout, as you can see in the <a href="#code/app/controllers/Application">Application</a> controller.
+    When you use tell instead you don't have to do that but if you want you can still enforce timeout semantics on the request by scheduling
+    a timeout message that you send to yourself. In regards to the <code>TrainingModelResponseHandler</code> it means that the handler is scheduling a <code>TrainingModelRetrievalTimeout</code> to be sent in 3 seconds.
+    If the handler doesn't receive a result from the online or batch trainer beforehand it will send the timeout message to the original sender. However if it receives the result in time it will cancel the scheduler and return the actual results.
+  </p>
+  <p>
+    As you can see from the code using the cameo actors (<code>FetchResponseHandler</code> and <code>TrainingModelResponseHandler</code>) avoids the use of any ask pattern and its associated problems. 
+  </p>
 </div>
 <div>
     <h2 id="model-training-and-statistics">Model Training and Statistics</h2>
