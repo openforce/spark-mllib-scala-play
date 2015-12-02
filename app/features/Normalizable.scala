@@ -8,7 +8,7 @@ trait Normalizable[T] extends Function1[String, String] with Serializable {
 
   def transformFn(sentence: String): (T, String) => String
 
-  def transform(sentence: String): PartialFunction[(T, String), String] = { case (l, r) => transformFn(sentence)(l,r) }
+  def transform(sentence: String): PartialFunction[(T, String), String] = { case (l, r) => transformFn(sentence)(l, r) }
 
   override def apply(sentence: String): String = {
     var s = sentence.toLowerCase

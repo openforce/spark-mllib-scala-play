@@ -15,6 +15,7 @@ import play.api.Play.{configuration, current}
 import twitter.Tweet
 import twitter4j.auth.OAuthAuthorization
 import util.SentimentIdentifier
+import features.Transformers.default._
 
 object OnlineTrainer {
 

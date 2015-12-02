@@ -44,8 +44,7 @@ libraryDependencies ++= Seq(
   "com.github.fommil.netlib" % "all" % "1.1.2" pomOnly(),
   "org.scalanlp" %% "breeze" % "0.11.2",
   "org.scalanlp" % "chalk" % "1.3.0" intransitive(),
-  "org.scalanlp" % "nak" % "1.2.0" intransitive(),
-  "org.spire-math" %% "cats" % "0.3.0"
+  "org.scalanlp" % "nak" % "1.2.0" intransitive()
 )
 
 dependencyOverrides ++= Set(

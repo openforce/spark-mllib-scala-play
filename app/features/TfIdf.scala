@@ -4,6 +4,7 @@ import org.apache.spark.mllib.feature.{IDF, HashingTF}
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 import twitter.Tweet
+import features.Transformers.default._
 
 case class TfIdf(corpus: RDD[Tweet]) extends Serializable {
 

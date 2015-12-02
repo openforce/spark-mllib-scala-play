@@ -9,6 +9,7 @@ import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{SQLContext, Row}
 import twitter.{LabeledTweet, Tweet}
+import features.Transformers.default._
 
 trait PredictorProxy {
 
