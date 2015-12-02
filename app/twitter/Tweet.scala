@@ -33,12 +33,15 @@ case class Tweet(text: String, sentiment: Double, transformer: String => Seq[Str
 
 object Tweet {
 
-  val sentiment: String => String = SentimentTransformable
-  val shorty: String => String = ShortFormTransformable
-  val noise: String => String = NoiseTransformable
+  val sentiment: String => String = SentimentNormalizable$
+  val shorty: String => String = ShortFormNormalizable$
+  val noise: String => String = NoiseNormalizable$
+  val stemmer: String => String = EnglishStemmer
+  val unigram: String => Seq[String] = UnigramTokenizer
   val bigram: String => Seq[String] = BigramTokenizer
+  val tokenizer: String => Seq[String] = (sentence: String) => unigram(sentence) ++ bigram(sentence)
 
-  val transformer: String => Seq[String] = sentiment andThen shorty andThen noise andThen bigram
+  val transformer: String => Seq[String] = sentiment andThen shorty andThen noise andThen stemmer andThen tokenizer
 
   def apply(status: Status): Tweet = Tweet(
     status.getText,
