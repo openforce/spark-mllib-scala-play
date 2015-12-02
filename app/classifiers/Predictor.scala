@@ -33,11 +33,9 @@ class Predictor(sparkContext: SparkContext) extends PredictorProxy {
         LabeledTweet(tweet, prediction.toString)
       }
 
-  override def predict(onlineTrainingModel: LogisticRegressionModel, onlineFeatures: RDD[(String, Vector)]) = {
-
+  override def predict(onlineTrainingModel: LogisticRegressionModel, onlineFeatures: RDD[(String, Vector)]) =
     onlineFeatures.map { case (tweet, vector) =>
       LabeledTweet(tweet, onlineTrainingModel.predict(vector).toString)
     } collect()
-  }
 
 }
