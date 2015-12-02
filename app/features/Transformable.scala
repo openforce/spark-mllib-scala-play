@@ -4,14 +4,16 @@ import scala.util.matching.Regex
 
 trait Transformable[T] extends Function1[String, String] with Serializable {
 
-  def mapping: Map[T, String]
+  val mapping: Map[T, String]
 
-  def transformFn(sentence: String): PartialFunction[(T, String), String]
+  def transformFn(sentence: String): (T, String) => String
+
+  def transform(sentence: String): PartialFunction[(T, String), String] = { case (l, r) => transformFn(sentence)(l,r) }
 
   override def apply(sentence: String): String = {
     var s = sentence.toLowerCase
     for(pair <- mapping)
-      s = transformFn(s)(pair)
+      s = transform(s)(pair)
     s
   }
 
@@ -23,7 +25,7 @@ object SentimentTransformable extends Transformable[String] {
   val bad = "bad"
   val sad = "sad"
 
-  override def mapping = Map(
+  val mapping = Map(
     // positive emoticons
     ":)" -> good,
     ":-)" -> good,
@@ -72,16 +74,13 @@ object SentimentTransformable extends Transformable[String] {
     " ->-S" -> bad
   )
 
-  override def transformFn(sentence: String): PartialFunction[(String, String), String] = {
-    case (emoji, sentiment) =>
-      sentence.replace(emoji, sentiment)
-  }
+  override def transformFn(sentence: String) = (emoji, sentiment) => sentence.replace(emoji, sentiment)
 
 }
 
 object ShortFormTransformable extends Transformable[Regex] {
 
-  override def mapping = Map(
+  val mapping = Map(
     "\br\b".r -> "you",
     "\bhaha\b".r -> "ha",
     "\bhahaha\b".r -> "ha",
@@ -97,52 +96,19 @@ object ShortFormTransformable extends Transformable[Regex] {
     "\bcannot\b".r -> "can not"
   )
 
-  override def transformFn(sentence: String): PartialFunction[(Regex, String), String] = {
-    case (shortForm, extendedForm) =>
-      shortForm.replaceAllIn(sentence, extendedForm)
-  }
+  override def transformFn(sentence: String) = (shortForm, extendedForm) => shortForm.replaceAllIn(sentence, extendedForm)
 
 }
 
 object NoiseTransformable extends Transformable[Regex] {
 
-  override def mapping = Map(
+  val mapping = Map(
     "([a-z])\\1\\1+".r -> "$1$1", // shorten duplicate chars
     "@\\S+".r -> "USERNAME",      // replace username
     "http:\\/\\/\\S+".r -> "URL",  // replace url
     "[-_]".r -> " "
   )
 
-  override def transformFn(sentence: String): PartialFunction[(Regex, String), String] = {
-    case (noise, antiNoise) =>
-      noise.replaceAllIn(sentence, antiNoise)
-  }
+  override def transformFn(sentence: String) = (noise, signal) => noise.replaceAllIn(sentence, signal)
 
 }
-
-//trait Xxx {
-//  def transformSentence(text: String): String = {
-//    var t = text.toLowerCase
-//    for ((emo, repl) <- emoRepl) t = t.replace(emo, repl)
-//    for ((regex, repl) <- reRepl) t = regex.replaceAllIn(t, repl)
-//    t.replace("-", " ").replace("_", " ")
-//  }
-
-//  def shortenDuplicateChars(word: String): String = word.replaceAll("([a-z])\\1\\1+", "$1$1")
-//
-//  def username(word: String): String = word.replaceAll("@\\S+", "USERNAME")
-//
-//  def url(word: String): String = word.replaceAll("http:\\/\\/\\S+", "URL")
-
-//  def unigrams(text: String)(implicit languagePack: LanguagePack): Set[String] =
-//    tokenizeSentence(text).toSet
-//
-//  def bigrams(text: String)(implicit languagePack: LanguagePack): Set[String] =
-//    text
-//      .split("\\.")
-//      .map { s => tokenizeSentence(s).sliding(2) }
-//      .flatMap(identity).map(_.mkString(" ")).toSet
-
-//}
-
-//object Transformable extends Transformable
