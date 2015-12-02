@@ -2,29 +2,27 @@ package features
 
 import chalk.text.LanguagePack
 
-trait Tokenizer {
-
-  def tokenize(sentence: String): Seq[String]
-
-}
+trait Tokenizer extends Function1[String, Seq[String]]
 
 trait EnglishSentenceTokenizer extends Tokenizer {
 
   implicit val languagePack: LanguagePack = chalk.text.LanguagePack.English
 
-  override def tokenize(sentence: String): Seq[String] =
+  override def apply(sentence: String): Seq[String] =
     sentence
       .split(" ")
       .map(languagePack.stemmer.getOrElse(identity[String] _))
-      .map(_.replaceAll("""\W+""", "")).toSeq
 
 }
 
-trait BigramTokenizer extends EnglishSentenceTokenizer {
+object BigramTokenizer extends EnglishSentenceTokenizer {
 
-  override def tokenize(sentence: String): Seq[String] =
-    super.tokenize(sentence)
-//      .map { s => tokenizeSentence(s).sliding(2) }
-//      .flatMap(identity).map(_.mkString(" ")).toSet
+  override def apply(sentence: String): Seq[String] = {
+    super.apply(sentence) ++
+      sentence
+        .split("\\.")
+        .map((s) => super.apply(s).sliding(2))
+        .flatMap(identity).map(_.mkString(" ")).toSeq
+  }
 
 }

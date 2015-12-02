@@ -1,25 +1,18 @@
 package twitter
 
-import features.Transformable
+import cats.syntax.functor._
+import cats._, cats.std.all._
+import features.{NoiseTransformable, SentimentTransformable}
 import org.scalatest.{MustMatchers, WordSpecLike}
 
 class TransformableSpec extends WordSpecLike with MustMatchers{
 
-  "A transformable" should {
+  "Transformers" should {
 
-    "replace emoji" in {
-      Transformable.transformSentence(" I feel \uD83D\uDE15") === "I feel  bad "
-      Transformable.transformSentence(" I feel \uD83D\uDE1F") === "I feel  bad "
-      Transformable.transformSentence(" I feel \uD83D\uDE1B") === "I feel  good "
-    }
-  }
+    "compose" in {
 
-  "Transformables" should {
+      Tweet("foobar :) @openforce").tokens must equal(Seq("foobar", "good", "usernam", "foobar good", "good usernam"))
 
-    "be composable" in {
-      val pipeline: Transformable = SentimentTransformable compose NoiseTranformable
-
-      val tweet = new Tweet(pipeline.map()) extends BigramTokenizer
     }
 
   }

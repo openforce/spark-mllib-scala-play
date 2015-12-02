@@ -1,17 +1,17 @@
 package features
 
-import chalk.text.LanguagePack
 import scala.util.matching.Regex
 
-trait Transformable[T] extends Serializable {
+trait Transformable[T] extends Function1[String, String] with Serializable {
 
   def mapping: Map[T, String]
 
   def transformFn(sentence: String): PartialFunction[(T, String), String]
 
-  def transform(sentence: String): String = {
+  override def apply(sentence: String): String = {
     var s = sentence.toLowerCase
-    for(pair <- mapping) s = transformFn(sentence)(pair)
+    for(pair <- mapping)
+      s = transformFn(s)(pair)
     s
   }
 
@@ -19,12 +19,14 @@ trait Transformable[T] extends Serializable {
 
 object SentimentTransformable extends Transformable[String] {
 
-  val good = " good "
-  val bad = " bad "
-  val sad = " sad "
+  val good = "good"
+  val bad = "bad"
+  val sad = "sad"
 
   override def mapping = Map(
     // positive emoticons
+    ":)" -> good,
+    ":-)" -> good,
     "&lt;3" -> good,
     " ->d" -> good,
     " ->dd" -> good,
@@ -32,6 +34,7 @@ object SentimentTransformable extends Transformable[String] {
     " ->-)" -> good,
     " ->)" -> good,
     ";)" -> good,
+    ";-)" -> good,
     "(- ->" -> good,
     "( ->" -> good,
     "\uD83D\uDE03" -> good, // smiley open mouth

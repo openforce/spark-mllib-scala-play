@@ -1,6 +1,5 @@
 package twitter
 
-import chalk.text.LanguagePack
 import features._
 import org.apache.spark.mllib.feature.HashingTF
 import org.apache.spark.mllib.linalg.Vector
@@ -8,6 +7,8 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import play.api.libs.json.Json
 import twitter4j.Status
 import util.SentimentIdentifier._
+import cats.std.all._
+import cats.syntax.functor._
 
 case class LabeledTweet(tweet: String, sentiment: String)
 
@@ -17,12 +18,9 @@ object LabeledTweet {
 
 }
 
-abstract class Tweet(text: String, sentiment: Double) extends Serializable with Tokenizer {
+case class Tweet(text: String, sentiment: Double, transformer: String => Seq[String]) extends Serializable  {
 
-  def tokens: Seq[String] = tokenize(
-    NoiseTransformable.transform(
-      ShortFormTransformable.transform(
-        SentimentTransformable.transform(text))))
+  def tokens: Seq[String] = transformer(text)
 
   def features(implicit hashingTF: HashingTF): Vector = hashingTF.transform(tokens)
 
@@ -35,14 +33,29 @@ abstract class Tweet(text: String, sentiment: Double) extends Serializable with 
 
 object Tweet {
 
-  def apply(status: Status): Tweet = new Tweet(
-    status.getText,
-    if (isPositive(status.getText)) 1.0 else 0.0
-  ) with BigramTokenizer
+  val sentiment: String => String = SentimentTransformable
+  val shorty: String => String = ShortFormTransformable
+  val noise: String => String = NoiseTransformable
+  val bigram: String => Seq[String] = BigramTokenizer
 
-  def apply(tweetText: String): Tweet = new Tweet(
+  val transformer: String => Seq[String] = sentiment andThen shorty andThen noise andThen bigram
+
+  def apply(status: Status): Tweet = Tweet(
+    status.getText,
+    if (isPositive(status.getText)) 1.0 else 0.0,
+    transformer
+  )
+
+  def apply(tweetText: String): Tweet = Tweet(
     tweetText,
-    if (isPositive(tweetText)) 1.0 else 0.0
-  ) with BigramTokenizer
+    if (isPositive(tweetText)) 1.0 else 0.0,
+    transformer
+  )
+
+  def apply(text: String, sentiment: Double): Tweet = Tweet(
+    text,
+    sentiment,
+    transformer
+  )
 
 }

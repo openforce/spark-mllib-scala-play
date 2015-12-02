@@ -13,8 +13,8 @@ case class TfIdf(corpus: RDD[Tweet]) extends Serializable {
 
   val idf = new IDF().fit(tf.transform(corpus.map(_.tokens)))
 
-  def tf(text: Set[String]): Vector = tf.transform(text)
+  def tf(text: Seq[String]): Vector = tf.transform(text)
 
-  def tfIdf(text: Set[String]): Vector = idf.transform(tf.transform(text))
+  def tfIdf(text: Seq[String]): Vector = idf.transform(tf.transform(text))
 
 }
