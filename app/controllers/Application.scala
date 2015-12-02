@@ -1,6 +1,7 @@
 package controllers
 
 import javax.inject._
+
 import actors.Classifier._
 import actors.Director.GetClassifier
 import actors.FetchResponseHandler.FetchResponseTimeout
@@ -14,12 +15,16 @@ import play.api.Logger
 import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json.{JsValue, Json}
-import play.api.mvc.{Result, Action, Controller, WebSocket}
+import play.api.libs.oauth.OAuthCalculator
+import play.api.libs.ws.WS
+import play.api.mvc.{Action, Controller, Result, WebSocket}
 import play.api.routing.JavaScriptReverseRouter
+
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 @Singleton
-class Application @Inject()(system: ActorSystem, sparkContext: SparkContext) extends Controller {
+class Application @Inject()(system: ActorSystem, sparkContext: SparkContext, twitter: Twitter) extends Controller {
 
   val log = Logger(this.getClass)
 
@@ -58,9 +63,12 @@ class Application @Inject()(system: ActorSystem, sparkContext: SparkContext) ext
 
   def jsRoutes = Action { implicit request =>
     Ok(
-    JavaScriptReverseRouter("jsRoutes")(
-    routes.javascript.Application.classify
-    )
+      JavaScriptReverseRouter("jsRoutes")(
+        routes.javascript.Twitter.authenticated,
+        routes.javascript.Application.classify,
+        routes.javascript.Twitter.keys,
+        routes.javascript.Twitter.logout
+      )
     ).as("text/javascript")
   }
 

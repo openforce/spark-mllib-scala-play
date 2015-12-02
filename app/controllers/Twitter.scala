@@ -1,0 +1,63 @@
+package controllers
+
+import play.api.Play._
+import play.api.libs.oauth._
+import play.api.mvc._
+
+class Twitter extends Controller {
+
+  val KEY = ConsumerKey(
+    configuration.getString("twitter.consumer.key").getOrElse(""),
+    configuration.getString("twitter.consumer.secret").getOrElse("")
+  )
+
+  val TWITTER = OAuth(ServiceInfo(
+    "https://api.twitter.com/oauth/request_token",
+    "https://api.twitter.com/oauth/access_token",
+    "https://api.twitter.com/oauth/authorize", KEY),
+    true)
+
+  def authenticate = Action { request =>
+    request.getQueryString("oauth_verifier").map { verifier =>
+      val tokenPair = sessionTokenPair(request).get
+      // We got the verifier; now get the access token, store it and back to index
+      TWITTER.retrieveAccessToken(tokenPair, verifier) match {
+        // We received the authorized tokens in the OAuth object - store it before we proceed
+        case Right(t) => Redirect(routes.Application.index).withSession("token" -> t.token, "secret" -> t.secret)
+        case Left(e) => throw e
+      }
+    }.getOrElse(
+        TWITTER.retrieveRequestToken("http://127.0.0.1:9000/authenticate") match {
+          // We received the unauthorized tokens in the OAuth object - store it before we proceed
+          case Right(t) => Redirect(TWITTER.redirectUrl(t.token)).withSession("token" -> t.token, "secret" -> t.secret)
+          case Left(e) => throw e
+        })
+  }
+
+  def logout() = Action { implicit request =>
+    Redirect(routes.Application.index).withNewSession
+  }
+
+  def authenticated = Action { implicit request =>
+    sessionTokenPair match {
+      case Some(_) => NoContent
+      case None => Unauthorized
+    }
+  }
+
+  def keys = Action { implicit request =>
+    KEY.key.equals("") && KEY.secret.equals("") match {
+      case true => InternalServerError
+      case false => NoContent
+    }
+  }
+
+  def sessionTokenPair(implicit request: RequestHeader): Option[RequestToken] = {
+    for {
+      token <- request.session.get("token")
+      secret <- request.session.get("secret")
+    } yield {
+      RequestToken(token, secret)
+    }
+  }
+}

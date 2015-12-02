@@ -11,7 +11,7 @@
         <link rel="stylesheet" href='@routes.Assets.versioned("stylesheets/vendor/font-awesome/css/font-awesome.min.css")'/>
         <link rel="stylesheet" href='@routes.Assets.versioned("stylesheets/main.css")'/>
     </head>
-    <body unresolved class="fullbleed layout vertical">
+    <body unresolved class="fullbleed layout vertical not-authenticated keys-missing">
         <span id="browser-sync-binding"></span>
         <template is="dom-bind" id="app">
             <div class="header">
@@ -21,6 +21,9 @@
                             <img alt="Brand" src='@routes.Assets.at("images/logo.png")'>
                         </a>
                         <ul class="navbar-right">
+                            <li class="logout">
+                                <a href="/logout">Logout</a>
+                            </li>
                             <li>
                                 <a href="http://www.openforce.com">About</a>
                             </li>
@@ -47,13 +50,43 @@
                     </li>
                 </ul>
             </div>
-            <form class="heading-container search">
+            <form class="heading-container actions search">
                 <div class="paper-input">
                     <paper-input label="Keyword" autofocus>
                         <paper-icon-button suffix icon="search" id="start-predicting"></paper-icon-button>
                     </paper-input>
                 </div>
             </form>
+            <form action="@routes.Twitter.authenticate" class="heading-container actions login">
+                <h2>Twitter authentication</h2>
+                <div>
+                    <p>
+                        Before you can use the application please login with your Twitter account.<br />
+                        <small>(This is needed because of Twitter api regulations.</small>)
+                    </p>
+                </div>
+                <button class="twitter-login"></button>
+            </form>
+            <div class="heading-container actions keys-missing-error">
+                <h2>Consumer key and/or secret are missing</h2>
+                <p>
+                    Because twitter doesn't allow key/token/password sharing (which makes sense) you have to create an application at Twitter before you can use this application.
+                    You can create and manage your applications at <a href="https://apps.twitter.com/">https://apps.twitter.com/</a>
+                </p>
+                <p>
+                    After you've obtained your consumer key and secret, enter them in your application.conf like this:
+                </p>
+                <p>
+                    <pre>
+twitter {
+  consumer {
+    key = "CONSUMER_KEY"
+    secret = "CONSUMER_SECRET"
+  }
+}
+                    </pre>
+                </p>
+            </div>
             <div class="push-down"></div>
                 <!-- Main Content -->
             <div class="content">

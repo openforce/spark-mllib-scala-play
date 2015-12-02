@@ -5,7 +5,6 @@ import { WebSocket } from './websocket.js';
 export class Frontend {
 
     constructor() {
-        this.api = new API();
         this.chart = new Chart();
     }
 
@@ -124,6 +123,7 @@ export class Frontend {
         var $batchTwitterList = $('.batch-results');
         var $onlineTwitterList = $('.online-results');
 
+        var $body = $('body');
         var $content = $('.content');
         var progressBar = document.querySelector('.paper-progress');
         var searchForm = document.querySelector('.search');
@@ -131,9 +131,23 @@ export class Frontend {
         var container = document.querySelector('#mainContainer');
 
         this.handleScrolling();
-
         this.chart.wire();
+
         this.setupWebSockets();
+        /**
+         * Check if the user is authenticated. If not show the login form
+         */
+        API.authenticated().then(
+            () => $body.addClass('authenticated').removeClass('not-authenticated'),
+            () => console.log("failed")
+        );
+
+        /**
+         * Check if oauth consumer keys are in application conf
+         */
+        API.keys().then(
+            () => $body.removeClass('keys-missing')
+        );
 
         /*
          * Wire the frontend
@@ -146,7 +160,7 @@ export class Frontend {
 
             $content.velocity("scroll", {duration: 350, offset: -175});
 
-            this.api.classify(searchBox.value)
+            API.classify(searchBox.value)
                 .then((json) => {
                     var batchResults = json.batchModelResult;
                     var onlineResults = json.onlineModelResult;
