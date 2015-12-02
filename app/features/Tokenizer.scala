@@ -2,22 +2,26 @@ package features
 
 trait Tokenizer extends Function1[String, Seq[String]]
 
-object UnigramTokenizer extends Tokenizer {
+object Tokenizer {
 
-  override def apply(sentence: String): Seq[String] =
-    sentence
-      .split(" ")
-      .map(_.replaceAll("""\W+""", ""))
+  def unigram = new Tokenizer {
+    override def apply(sentence: String): Seq[String] =
+      sentence
+        .split(" ")
+        .map(_.replaceAll("""\W+""", ""))
+  }
 
-}
+  def ngram(n: Int) = new Tokenizer {
+    override def apply(sentence: String): Seq[String] =
+      sentence
+        .split("\\.")
+        .map(_.trim)
+        .map(unigram(_).sliding(n))
+        .flatMap(identity).map(_.mkString(" ")).toSeq
+  }
 
-object BigramTokenizer extends Tokenizer {
+  def bigram = ngram(2)
 
-  override def apply(sentence: String): Seq[String] =
-    sentence
-      .split("\\.")
-      .map(_.trim)
-      .map(UnigramTokenizer(_).sliding(2))
-      .flatMap(identity).map(_.mkString(" ")).toSeq
+  def trigram = ngram(3)
 
 }

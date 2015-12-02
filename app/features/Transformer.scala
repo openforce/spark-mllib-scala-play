@@ -17,7 +17,7 @@ object Transformers {
         ShortFormNormalizer andThen
         NoiseNormalizer andThen
         EnglishStemmer andThen
-        { (sentence: String) => UnigramTokenizer(sentence) ++ BigramTokenizer(sentence) }
+        { (sentence: String) => Tokenizer.unigram(sentence) ++ Tokenizer.bigram(sentence) }
 
     }
 
