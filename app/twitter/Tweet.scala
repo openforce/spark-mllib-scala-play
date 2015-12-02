@@ -1,6 +1,6 @@
 package twitter
 
-import chalk.text.LanguagePack
+import features._
 import org.apache.spark.mllib.feature.HashingTF
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.mllib.regression.LabeledPoint
@@ -16,15 +16,11 @@ object LabeledTweet {
 
 }
 
-case class Tweet(text: String, sentiment: Double) extends Serializable with Transformable {
+case class Tweet(text: String, sentiment: Double) extends Serializable {
 
-  implicit val languagePack: LanguagePack = chalk.text.LanguagePack.English
+  def tokens(implicit transformer: Transformer): Seq[String] = transformer.transform(text)
 
-  def features(implicit hashingTF: HashingTF): Vector = hashingTF.transform(tokens)
-
-  def tokens = unigramsAndBigrams(text)
-
-  def toLabeledPoint(implicit hashingTF: HashingTF): LabeledPoint = LabeledPoint(sentiment, features)
+  def toLabeledPoint(implicit hashingTF: HashingTF, transformer: Transformer): LabeledPoint = LabeledPoint(sentiment, hashingTF.transform(tokens))
 
   def toLabeledPoint(f: String => Vector): LabeledPoint = LabeledPoint(sentiment, f(text))
 

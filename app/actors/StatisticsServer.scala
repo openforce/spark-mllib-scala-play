@@ -14,6 +14,7 @@ import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 import play.api.libs.json.{Json, Reads, Writes}
 import twitter.Tweet
 import util.EnumUtils
+import features.Transformers.default._
 
 object StatisticsServer {
 

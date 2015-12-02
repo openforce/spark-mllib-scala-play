@@ -1,14 +1,34 @@
-package twitter
+package features
 
-import chalk.text.LanguagePack
+import scala.util.matching.Regex
 
-trait Transformable extends Serializable {
+trait Normalizable[T] extends Function1[String, String] with Serializable {
 
-  private val good = " good "
-  private val bad = " bad "
-  private val sad = " sad "
-  private final val emoRepl = Map(
+  val mapping: Map[T, String]
+
+  def transformFn(sentence: String): (T, String) => String
+
+  def transform(sentence: String): PartialFunction[(T, String), String] = { case (l, r) => transformFn(sentence)(l, r) }
+
+  override def apply(sentence: String): String = {
+    var s = sentence.toLowerCase
+    for(pair <- mapping)
+      s = transform(s)(pair)
+    s
+  }
+
+}
+
+object SentimentNormalizer extends Normalizable[String] {
+
+  val good = "good"
+  val bad = "bad"
+  val sad = "sad"
+
+  val mapping = Map(
     // positive emoticons
+    ":)" -> good,
+    ":-)" -> good,
     "&lt;3" -> good,
     " ->d" -> good,
     " ->dd" -> good,
@@ -16,6 +36,7 @@ trait Transformable extends Serializable {
     " ->-)" -> good,
     " ->)" -> good,
     ";)" -> good,
+    ";-)" -> good,
     "(- ->" -> good,
     "( ->" -> good,
     "\uD83D\uDE03" -> good, // smiley open mouth
@@ -53,7 +74,13 @@ trait Transformable extends Serializable {
     " ->-S" -> bad
   )
 
-  private final val reRepl = Map(
+  override def transformFn(sentence: String) = (emoji, sentiment) => sentence.replace(emoji, sentiment)
+
+}
+
+object ShortFormNormalizer extends Normalizable[Regex] {
+
+  val mapping = Map(
     "\br\b".r -> "you",
     "\bhaha\b".r -> "ha",
     "\bhahaha\b".r -> "ha",
@@ -69,36 +96,19 @@ trait Transformable extends Serializable {
     "\bcannot\b".r -> "can not"
   )
 
-  def transformSentence(text: String): String = {
-    var t = text.toLowerCase
-    for ((emo, repl) <- emoRepl) t = t.replace(emo, repl)
-    for ((regex, repl) <- reRepl) t = regex.replaceAllIn(t, repl)
-    t.replace("-", " ").replace("_", " ")
-  }
-
-  def shortenDuplicateChars(word: String): String = word.replaceAll("([a-z])\\1\\1+", "$1$1")
-
-  def username(word: String): String = word.replaceAll("@\\S+", "USERNAME")
-
-  def url(word: String): String = word.replaceAll("http:\\/\\/\\S+", "URL")
-
-  def tokenizeSentence(sentence: String)(implicit languagePack: LanguagePack): Seq[String] =
-    transformSentence(sentence)
-      .split(" ")
-      .map(_.toLowerCase)
-      .map(shortenDuplicateChars)
-      .map(username)
-      .map(url)
-      .map(languagePack.stemmer.getOrElse(identity[String] _))
-      .map(_.replaceAll("""\W+""", "")).toSeq
-
-  def unigramsAndBigrams(text: String)(implicit languagePack: LanguagePack): Set[String] =
-    (tokenizeSentence(text) ++ // unigrams
-      text // bigrams
-        .split("\\.")
-        .map { s => tokenizeSentence(s).sliding(2) }
-        .flatMap(identity).map(_.mkString(" "))).toSet
+  override def transformFn(sentence: String) = (shortForm, extendedForm) => shortForm.replaceAllIn(sentence, extendedForm)
 
 }
 
-object Transformable extends Transformable
+object NoiseNormalizer extends Normalizable[Regex] {
+
+  val mapping = Map(
+    "([a-z])\\1\\1+".r -> "$1$1", // shorten duplicate chars
+    "@\\S+".r -> "USERNAME",      // replace username
+    "http:\\/\\/\\S+".r -> "URL",  // replace url
+    "[-_]".r -> " "
+  )
+
+  override def transformFn(sentence: String) = (noise, signal) => noise.replaceAllIn(sentence, signal)
+
+}
