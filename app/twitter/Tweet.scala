@@ -33,9 +33,9 @@ case class Tweet(text: String, sentiment: Double, transformer: String => Seq[Str
 
 object Tweet {
 
-  val sentiment: String => String = SentimentNormalizable$
-  val shorty: String => String = ShortFormNormalizable$
-  val noise: String => String = NoiseNormalizable$
+  val sentiment: String => String = SentimentNormalizer
+  val shorty: String => String = ShortFormNormalizer
+  val noise: String => String = NoiseNormalizer
   val stemmer: String => String = EnglishStemmer
   val unigram: String => Seq[String] = UnigramTokenizer
   val bigram: String => Seq[String] = BigramTokenizer

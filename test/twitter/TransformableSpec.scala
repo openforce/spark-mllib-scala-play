@@ -2,7 +2,7 @@ package twitter
 
 import cats.syntax.functor._
 import cats._, cats.std.all._
-import features.{NoiseNormalizable$, SentimentNormalizable$}
+import features.{NoiseNormalizer, SentimentNormalizer}
 import org.scalatest.{MustMatchers, WordSpecLike}
 
 class TransformableSpec extends WordSpecLike with MustMatchers{

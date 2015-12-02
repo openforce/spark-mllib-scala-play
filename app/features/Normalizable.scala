@@ -19,7 +19,7 @@ trait Normalizable[T] extends Function1[String, String] with Serializable {
 
 }
 
-object SentimentNormalizable$ extends Normalizable[String] {
+object SentimentNormalizer extends Normalizable[String] {
 
   val good = "good"
   val bad = "bad"
@@ -78,7 +78,7 @@ object SentimentNormalizable$ extends Normalizable[String] {
 
 }
 
-object ShortFormNormalizable$ extends Normalizable[Regex] {
+object ShortFormNormalizer extends Normalizable[Regex] {
 
   val mapping = Map(
     "\br\b".r -> "you",
@@ -100,7 +100,7 @@ object ShortFormNormalizable$ extends Normalizable[Regex] {
 
 }
 
-object NoiseNormalizable$ extends Normalizable[Regex] {
+object NoiseNormalizer extends Normalizable[Regex] {
 
   val mapping = Map(
     "([a-z])\\1\\1+".r -> "$1$1", // shorten duplicate chars
