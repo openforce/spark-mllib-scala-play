@@ -7,6 +7,7 @@ object UnigramTokenizer extends Tokenizer {
   override def apply(sentence: String): Seq[String] =
     sentence
       .split(" ")
+      .map(_.replaceAll("""\W+""", ""))
 
 }
 
@@ -15,7 +16,8 @@ object BigramTokenizer extends Tokenizer {
   override def apply(sentence: String): Seq[String] =
     sentence
       .split("\\.")
-      .map((s) => s.split(" ").sliding(2))
+      .map(_.trim)
+      .map(UnigramTokenizer(_).sliding(2))
       .flatMap(identity).map(_.mkString(" ")).toSeq
 
 }

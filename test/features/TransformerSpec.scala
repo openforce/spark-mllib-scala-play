@@ -2,7 +2,7 @@ package features
 
 import org.scalatest.{MustMatchers, WordSpecLike}
 
-class TransformableSpec extends WordSpecLike with MustMatchers{
+class TransformerSpec extends WordSpecLike with MustMatchers{
 
   "DefaultTransformer" should {
 

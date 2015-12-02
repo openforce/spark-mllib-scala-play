@@ -14,10 +14,10 @@ object Transformers {
 
       override def transform: String => Seq[String] =
         SentimentNormalizer andThen
-          ShortFormNormalizer andThen
-          NoiseNormalizer andThen
-          EnglishStemmer andThen
-          { (sentence: String) => UnigramTokenizer(sentence) ++ BigramTokenizer(sentence) }
+        ShortFormNormalizer andThen
+        NoiseNormalizer andThen
+        EnglishStemmer andThen
+        { (sentence: String) => UnigramTokenizer(sentence) ++ BigramTokenizer(sentence) }
 
     }
 
