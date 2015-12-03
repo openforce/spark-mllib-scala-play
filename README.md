@@ -14,6 +14,15 @@ Assuming that you have [Java 8](http://www.oracle.com/technetwork/java/javase/do
 1. Launch SBT: `sbt run` or ACTIVATOR: `./activator ui` (If you want to start the application as Typesafe Activator Template)
 1. Navigate your browser to: <http://localhost:9000>
 
+If starting the application takes a very long time or even times out it may be due to a known [Activator issue](https://github.com/typesafehub/activator/issues/1036).
+In that case do the following before starting with `sbt run`.
+
+1. Delete the `project/sbt-fork-run.sbt` file
+1. Remove the line `fork in run := true` (added automatically when you start activator) from the bottom of `build.sbt`
+
+Without the fork option, which is needed by Activator the application should start within a few seconds.
+
+
 ## The Classification Workflow
 
 The following diagram shows how the actor communication workflow for classification looks like:
@@ -48,5 +57,3 @@ The __StatisticsServer__ receives `{Online,Batch}TrainerModel` messages and crea
 The __EventListener__ s are created for each client via the Playframeworks built-in `WebSocket.acceptWithActor`. `EventListener`s subscribe for `EventServer` and `StatisticsServer`. When the connections terminate (e.g. browser window is closed) the respective `EventListener` shuts down and unsubscribes from `EventServer` and/or `StatisticsServer` via `postStop()`.
 
 The __EventServer__ is created by the `Application` controller and forwards event messages (progress of corpus initialization) to the client (also via _Web Socket_).
-
-

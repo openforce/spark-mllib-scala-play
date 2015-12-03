@@ -32,6 +32,16 @@
 If you want to start it via SBT use <code>sbt run</code> and navigate your browser to <a href="http://localhost:9000" target="_blank">localhost:9000</a>.
 </p>
 
+<p>
+  If starting the application takes a very long time or even times out it may be due to a known <a href="https://github.com/typesafehub/activator/issues/1036">Activator issue</a>.
+  In that case do the following before starting with <code>sbt run</code></p>
+    <ul>
+      <li>Delete the sbt-fork-run.sbt file</li>
+      <li>Remove the line <code>fork in run := true</code>(added automatically when you start activator) from the bottom of build.sbt</li>
+    </ul>
+<p>
+  Without the fork option, which is needed by Activator the application should start within a few seconds.
+</p>
 </div><div><h2 id="building-and-testing">Building and Testing</h2>
 
 <p>To ensure that the basic environment is working, compile the code and run the tests. You can use the Activator UI&rsquo;s <a class="shortcut" href="#test">test</a> link or the sbt command <code>sbt test</code>.</p>
@@ -96,7 +106,7 @@ The <code>TrainingModelResponseHandler</code> collects the models, vectorizes Tw
     If the handler doesn't receive a result from the online or batch trainer beforehand it will send the timeout message to the original sender. However if it receives the result in time it will cancel the scheduler and return the actual results.
   </p>
   <p>
-    As you can see from the code using the cameo actors (<code>FetchResponseHandler</code> and <code>TrainingModelResponseHandler</code>) avoids the use of any ask pattern and its associated problems. 
+    As you can see from the code using the cameo actors (<code>FetchResponseHandler</code> and <code>TrainingModelResponseHandler</code>) avoids the use of any ask pattern and its associated problems.
   </p>
 </div>
 <div>
