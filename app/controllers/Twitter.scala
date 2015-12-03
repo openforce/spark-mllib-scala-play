@@ -28,7 +28,8 @@ class Twitter @Inject()(system: ActorSystem) extends Controller {
       // We got the verifier; now get the access token, store it and back to index
       TWITTER.retrieveAccessToken(tokenPair, verifier) match {
         case Right(t) => {
-          system.actorSelection("/user/receptionist") ! OAuthKeys(KEY, tokenPair)
+          // Notify the director about the new oauth credentials
+          system.actorSelection("/user/director") ! OAuthKeys(KEY, tokenPair)
 
           // We received the authorized tokens in the OAuth object - store it before we proceed
           Redirect(routes.Application.index).withSession("token" -> t.token, "secret" -> t.secret)
@@ -50,7 +51,8 @@ class Twitter @Inject()(system: ActorSystem) extends Controller {
   def authenticated = Action { implicit request =>
     sessionTokenPair match {
       case Some(tokenPair) => {
-        system.actorSelection("/user/receptionist") ! OAuthKeys(KEY, tokenPair)
+        // Notify the director about the new oauth credentials
+        system.actorSelection("/user/director") ! OAuthKeys(KEY, tokenPair)
 
         NoContent
       }

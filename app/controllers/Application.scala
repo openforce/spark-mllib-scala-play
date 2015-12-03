@@ -32,7 +32,7 @@ class Application @Inject()(system: ActorSystem, sparkContext: SparkContext, twi
 
   val statisticsServer = system.actorOf(StatisticsServer.props(sparkContext))
 
-  val director = system.actorOf(Director.props(sparkContext, eventServer, statisticsServer), "receptionist")
+  val director = system.actorOf(Director.props(sparkContext, eventServer, statisticsServer), "director")
 
   implicit val timeout = Timeout(5 seconds)
 
