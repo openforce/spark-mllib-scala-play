@@ -38,7 +38,7 @@ class CorpusInitializer(sparkContext: SparkContext, batchTrainer: ActorRef, onli
 
   val twitterAuth = Some(new OAuthAuthorization(TwitterHandler.config))
 
-  val csvFilePath = "data/trainingandtestdata/testdata.manual.2009.06.14.csv"
+  val csvFilePath = "data/testdata.manual.2009.06.14.csv"
 
   var posTweets: RDD[Tweet] = sparkContext.emptyRDD[Tweet]
 
