@@ -3,9 +3,11 @@ package actors
 import actors.TwitterHandler.{Fetch, FetchResponse}
 import akka.actor.{Actor, Props}
 import akka.event.LoggingReceive
+import controllers.OAuthKeys
 import org.apache.spark.SparkContext
 import play.api.Logger
 import play.api.Play.{configuration, current}
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import twitter.TwitterHelper
 import twitter4j.conf.{Configuration, ConfigurationBuilder}
 
@@ -15,6 +17,8 @@ object TwitterHandler {
   def consumerSecret = configuration.getString("twitter.consumer.secret")
   def accessTokenKey = configuration.getString("twitter.access-token.key")
   def accessTokenSecret = configuration.getString("twitter.access-token.secret")
+
+  var oAuthConfig: Configuration = _
 
   def config: Configuration =
     new ConfigurationBuilder()
@@ -40,12 +44,19 @@ class TwitterHandler(sparkContext: SparkContext, configuration: Configuration) e
 
   val log = Logger(this.getClass)
 
+  var oAuthKeys: OAuthKeys = _
+
   override def receive = LoggingReceive {
+
+    case keys: OAuthKeys => oAuthKeys = keys
 
     case Fetch(keyword) =>
       log.debug(s"Received Fetch message with keyword=$keyword from $sender")
-      val tweets = TwitterHelper.fetch(keyword, sparkContext, configuration)
-      sender ! FetchResponse(keyword, tweets)
+      val tweets = TwitterHelper.fetch(keyword, oAuthKeys)
+      val originalSender = sender
+      tweets.map { tweets =>
+        originalSender ! FetchResponse(keyword, tweets)
+      }
 
     case undefined => log.warn(s"Unexpected message $undefined")
   }

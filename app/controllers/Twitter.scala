@@ -1,10 +1,15 @@
 package controllers
 
+import javax.inject.Inject
+
+import akka.actor.ActorSystem
 import play.api.Play._
 import play.api.libs.oauth._
 import play.api.mvc._
 
-class Twitter extends Controller {
+case class OAuthKeys(consumerKey: ConsumerKey, requestToken: RequestToken)
+
+class Twitter @Inject()(system: ActorSystem) extends Controller {
 
   val KEY = ConsumerKey(
     configuration.getString("twitter.consumer.key").getOrElse(""),
@@ -22,8 +27,12 @@ class Twitter extends Controller {
       val tokenPair = sessionTokenPair(request).get
       // We got the verifier; now get the access token, store it and back to index
       TWITTER.retrieveAccessToken(tokenPair, verifier) match {
-        // We received the authorized tokens in the OAuth object - store it before we proceed
-        case Right(t) => Redirect(routes.Application.index).withSession("token" -> t.token, "secret" -> t.secret)
+        case Right(t) => {
+          system.actorSelection("/user/receptionist") ! OAuthKeys(KEY, tokenPair)
+
+          // We received the authorized tokens in the OAuth object - store it before we proceed
+          Redirect(routes.Application.index).withSession("token" -> t.token, "secret" -> t.secret)
+        }
         case Left(e) => throw e
       }
     }.getOrElse(
@@ -40,7 +49,11 @@ class Twitter extends Controller {
 
   def authenticated = Action { implicit request =>
     sessionTokenPair match {
-      case Some(_) => NoContent
+      case Some(tokenPair) => {
+        system.actorSelection("/user/receptionist") ! OAuthKeys(KEY, tokenPair)
+
+        NoContent
+      }
       case None => Unauthorized
     }
   }
