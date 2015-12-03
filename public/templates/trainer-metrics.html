@@ -1,7 +1,7 @@
 <dom-module id="trainer-metrics">
     <template>
         <div class="metric-block">
-            <span class='metric-heading heading'>Batch Prediction Statistics</span>
+            <span class='metric-heading heading'>Batch Learning Statistics</span>
             <dl class="dl-horizontal">
                 <dt>Accuracy</dt>
                 <dd><span>{{batch.accuracy}}</span>%</dd>
@@ -10,12 +10,12 @@
             </dl>
         </div>
         <div class="metric-block realtime-chart-container">
-            <span class="metric-heading heading">Online Prediction Accuracy (<span>{{online.accuracy}}</span>%)</span>
+            <span class="metric-heading heading">Online Learning Accuracy (<span>{{online.accuracy}}</span>%)</span>
 
             <div class="realtime-chart"></div>
         </div>
         <div class="metric-block">
-            <span class='metric-heading heading'>Online Prediction Statistics</span>
+            <span class='metric-heading heading'>Online Learning Statistics</span>
             <dl class="dl-horizontal">
                 <dt>Accuracy</dt>
                 <dd><span>{{online.accuracy}}</span>%</dd>
