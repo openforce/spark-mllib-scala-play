@@ -4,13 +4,6 @@ trait Tokenizer extends Function1[String, Seq[String]]
 
 object Tokenizer {
 
-  def unigram = new Tokenizer {
-    override def apply(sentence: String): Seq[String] =
-      sentence
-        .split(" ")
-        .map(_.replaceAll("""\W+""", ""))
-  }
-
   def ngram(n: Int) = new Tokenizer {
     override def apply(sentence: String): Seq[String] =
       sentence
@@ -20,8 +13,15 @@ object Tokenizer {
         .flatMap(identity).map(_.mkString(" ")).toSeq
   }
 
-  def bigram = ngram(2)
+  val unigram = new Tokenizer {
+    override def apply(sentence: String): Seq[String] =
+      sentence
+        .split(" ")
+        .map(_.replaceAll("""\W+""", ""))
+  }
 
-  def trigram = ngram(3)
+  val bigram = ngram(2)
+
+  val trigram = ngram(3)
 
 }
