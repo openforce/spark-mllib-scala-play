@@ -8,7 +8,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.streaming.twitter.TwitterUtils
 import org.apache.spark.streaming.{Duration, StreamingContext}
 import play.api.Play.{configuration, current}
-import twitter.Tweet
+import twitter.{TwitterHelper, Tweet}
 import twitter4j.auth.OAuthAuthorization
 import util.SentimentIdentifier._
 import features.Transformers.default._
@@ -36,7 +36,7 @@ class CorpusInitializer(sparkContext: SparkContext, batchTrainer: ActorRef, onli
 
   val ssc = new StreamingContext(sparkContext, Duration(1000))
 
-  val twitterAuth = Some(new OAuthAuthorization(TwitterHandler.config))
+  val twitterAuth = Some(new OAuthAuthorization(TwitterHelper.config))
 
   val csvFilePath = "data/testdata.manual.2009.06.14.csv"
 

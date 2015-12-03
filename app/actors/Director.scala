@@ -5,6 +5,7 @@ import actors.OnlineTrainer.OnlineTrainerModel
 import akka.actor.{ActorLogging, Actor, ActorRef, Props}
 import akka.event.LoggingReceive
 import classifiers.Predictor
+import controllers.OAuthKeys
 import org.apache.spark.SparkContext
 import play.api.Logger
 
@@ -40,6 +41,10 @@ class Director(sparkContext: SparkContext, eventServer: ActorRef, statisticsServ
   context.actorOf(CorpusInitializer.props(sparkContext, batchTrainer, onlineTrainer, eventServer, statisticsServer), "corpus-initializer")
 
   override def receive = LoggingReceive {
+
+    case keys: OAuthKeys => {
+      twitterHandler ! keys
+    }
 
     case GetClassifier => sender ! classifier
 

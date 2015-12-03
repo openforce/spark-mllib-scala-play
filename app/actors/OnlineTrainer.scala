@@ -12,7 +12,7 @@ import org.apache.spark.sql.SQLContext
 import org.apache.spark.streaming.twitter.TwitterUtils
 import org.apache.spark.streaming.{Duration, StreamingContext}
 import play.api.Play.{configuration, current}
-import twitter.Tweet
+import twitter.{TwitterHelper, Tweet}
 import twitter4j.auth.OAuthAuthorization
 import util.SentimentIdentifier
 import features.Transformers.default._
@@ -39,7 +39,7 @@ class OnlineTrainer(sparkContext: SparkContext, director: ActorRef) extends Acto
 
   val ssc = new StreamingContext(sparkContext, Duration(1000))
 
-  val twitterAuth = Some(new OAuthAuthorization(TwitterHandler.config))
+  val twitterAuth = Some(new OAuthAuthorization(TwitterHelper.config))
 
   val sqlContext = new SQLContext(sparkContext)
 
