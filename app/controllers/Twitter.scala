@@ -25,20 +25,18 @@ class Twitter @Inject()(system: ActorSystem) extends Controller {
   def authenticate = Action { request =>
     request.getQueryString("oauth_verifier").map { verifier =>
       val tokenPair = sessionTokenPair(request).get
-      // We got the verifier; now get the access token, store it and back to index
       TWITTER.retrieveAccessToken(tokenPair, verifier) match {
         case Right(t) => {
           // Notify the director about the new oauth credentials
           system.actorSelection("/user/director") ! OAuthKeys(KEY, tokenPair)
 
-          // We received the authorized tokens in the OAuth object - store it before we proceed
           Redirect(routes.Application.index).withSession("token" -> t.token, "secret" -> t.secret)
         }
         case Left(e) => throw e
       }
     }.getOrElse(
-        TWITTER.retrieveRequestToken("http://127.0.0.1:9000/authenticate") match {
-          // We received the unauthorized tokens in the OAuth object - store it before we proceed
+        // TODO document in README.md (configuration)
+        TWITTER.retrieveRequestToken(configuration.getString("twitter.redirect.url").getOrElse("http://127.0.0.1:9000/authenticate")) match {
           case Right(t) => Redirect(TWITTER.redirectUrl(t.token)).withSession("token" -> t.token, "secret" -> t.secret)
           case Left(e) => throw e
         })

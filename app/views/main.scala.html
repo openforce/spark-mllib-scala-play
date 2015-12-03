@@ -50,14 +50,17 @@
                     </li>
                 </ul>
             </div>
-            <form class="heading-container actions search">
+            <form class="heading-container actions search batch-trainer-not-done">
                 <div class="paper-input">
-                    <paper-input label="Keyword" autofocus>
-                        <paper-icon-button suffix icon="search" id="start-predicting"></paper-icon-button>
+                    <paper-input label="Keyword" autofocus disabled id="search-input">
+                        <paper-icon-button suffix icon="search" id="start-predicting" type="submit"></paper-icon-button>
                     </paper-input>
+                    <div class="message text-danger">
+                        BatchTrainer is still training.
+                    </div>
                 </div>
             </form>
-            <form action="@routes.Twitter.authenticate" class="heading-container actions login">
+            <div class="heading-container actions login">
                 <h2>Twitter authentication</h2>
                 <div>
                     <p>
@@ -65,8 +68,10 @@
                         <small>(This is needed because of Twitter api regulations.</small>)
                     </p>
                 </div>
-                <button class="twitter-login"></button>
-            </form>
+                <a href="@routes.Twitter.authenticate">
+                    <button class="twitter-login"></button>
+                </a>
+            </div>
             <div class="heading-container actions keys-missing-error">
                 <h2>Consumer key and/or secret are missing</h2>
                 <p>

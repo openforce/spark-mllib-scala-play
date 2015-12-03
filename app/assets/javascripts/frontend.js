@@ -6,6 +6,7 @@ export class Frontend {
 
     constructor() {
         this.chart = new Chart();
+        this.$search = $('.search');
     }
 
     handleScrolling() {
@@ -58,6 +59,7 @@ export class Frontend {
     setupWebSockets() {
         var eventToast = document.querySelector('#event-toast');
         var metrics = document.querySelector("trainer-metrics");
+        var $search = $('.search');
 
         new WebSocket("#socket").on("onopen", (socket) => {
             console.log('Establish connection');
@@ -77,6 +79,11 @@ export class Frontend {
 
             if (data.trainer == "Online") {
                 this.chart.push(data.accuracy);
+            } else {
+                $search
+                    .find('paper-input').prop('disabled', null)
+                    .end()
+                    .find('.message').velocity('fadeOut')
             }
         });
     }
@@ -134,6 +141,7 @@ export class Frontend {
         this.chart.wire();
 
         this.setupWebSockets();
+
         /**
          * Check if the user is authenticated. If not show the login form
          */

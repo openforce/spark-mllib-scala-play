@@ -52,20 +52,23 @@ object TwitterHelper {
 
   val numTweetsToCollect = 10
 
+  // TODO document in README.md
+  val twitterFetchUrl = configuration.getString("twitter.fetch.url").get
+
   val log = Logger(this.getClass)
 
   def fetch(keyword: String, oAuthKeys: OAuthKeys): Future[Seq[String]] = {
     log.info(s"Start fetching tweets filtered by keyword=$keyword")
 
-    val tweets = WS.url(s"https://api.twitter.com/1.1/search/tweets.json?q=${keyword}&lang=en")
+    val tweets = WS.url(s"${twitterFetchUrl}${keyword}")
       .sign(OAuthCalculator(oAuthKeys.consumerKey, oAuthKeys.requestToken))
       .get
       .map(result => {
-      result.json.as[Statuses]
-    })
+        result.json.as[Statuses]
+      })
       .map(statuses => {
-      statuses.statuses.map(status => status.text)
-    })
+        statuses.statuses.map(status => status.text)
+      })
 
     tweets
   }
