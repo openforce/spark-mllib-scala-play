@@ -19,7 +19,10 @@
         <li>
       To run the application you will need <a href="http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html"  target="_blank">Java </a> and either <a href="http://www.scala-sbt.org" target="_blank">SBT</a> or <a href="https://typesafe.com/activator" target="_blank">Activator</a> installed.</li>
 
-  <li>Insert your Twitter access and consumer key/token pairs in <a href="#code/conf/application.conf">conf/application.conf</a>. For generating a token, please refer to <a href="https://dev.twitter.com/oauth/overview/application-owner-access-tokens"  target="_blank">https://dev.twitter.com</a> (Support fo OAuth will be added <a href="https://github.com/openforce/spark-mllib-scala-play/issues/6" target="_blank">soon</a>).</li>
+    <li>Insert your Twitter access and consumer key/token pairs in <a href="#code/conf/application.conf">conf/application.conf</a>.
+        For generating a token, please refer to <a
+            href="https://dev.twitter.com/oauth/overview/application-owner-access-tokens" target="_blank">https://dev.twitter.com</a>.
+    </li>
 </ol>
 </div><div><h2 id="starting-activator-or-sbt">Starting Activator or SBT</h2>
 
@@ -56,7 +59,7 @@ If you want to start it via SBT use <code>sbt run</code> and navigate your brows
         The following diagram shows the actor communication workflow for classification:
     </p>
 
-    <img src="tutorial/images/actors.jpg"></img>
+    <img src="tutorial/images/actors.jpg"/>
 
     <p>The <a href="#code/app/controllers/Application.scala">Application</a> controller serves HTTP requests from the client/browser and obtains <code>ActorRefs</code> for <a href="#code/app/actors/EventServer.scala">EventServer</a>, <a href="#code/app/actors/StatisticsServer.scala">StatisticsServer</a> and <a href="#code/app/actors/Director.scala">Director</a>.</p>
 
@@ -115,7 +118,7 @@ The <code>TrainingModelResponseHandler</code> collects the models, vectorizes Tw
     <p>
       The following diagram shows the actors involved in training the machine learning estimators and serving statistics about their predictive performance:
 
-      <img src="tutorial/images/actors2.jpg"></img>
+        <img src="tutorial/images/actors2.jpg"/>
 
 <p>
   The <a href="#code/app/actors/BatchTrainer.scala">BatchTrainer</a> receives a <code>Train</code> message as soon as a corpus (a collection of labeled tweets) has been initialized. This corpus is initialized by the <a href="#code/app/actors/CorpusInitializer.scala">CorpusInitializer</a> and can either be created on-the-fly via Spark's <code>TwitterUtils.createStream</code> (with automatic labeling by using emoticons ":)" and ":(") or a static corpus provided by <a href="http://www.sentiment140.com">Sentiment140</a> which is read from a CSV file. Which one to choose can be configured via <code>ml.corpus.initialization.streamed</code> in <a href="#code/conf/application.conf">conf/application.conf</a>. For batch training we use the high-level <code>org.apache.spark.ml</code> API. We use <bold>Grid Search Cross Validation</bold> to get the best hyperparameters for our <code>LogisticRegression</code> model.
@@ -133,5 +136,106 @@ The <a href="#code/app/actors/EventListener.scala">EventListener</a>s are create
 The <a href="#code/app/actors/EventServer.scala">EventServer</a> is created by the <a href="#code/app/controllers/Application.scala">Application</a> controller and forwards event messages (progress of corpus initialization) to the client (also via <code>Web Socket</code>).
 </p>
 </div>
+    <div>
+        <h2 id="machine-learning">Machine Learning</h2>
+        <p>
+            In this application we implemented two approaches to solve the classification problem
+            (see <a target="_blank" href="https://en.wikipedia.org/wiki/Statistical_classification">statistical
+            classification on Wikipedia</a> for more information about the problem).
+        </p>
+        <h3>The classic approach</h3>
+        <p>
+            The classic approach is to use a classification algorithm (we used <a
+            href="https://en.wikipedia.org/wiki/Logistic_regression">logistic regression</a>) with supervised training.
+            In our case that meant creating a set of labeled tweets - we actually didn't create this set ourselves, but
+            got it from <a target="_blank" href="http://sentiment140.com">Sentiment140</a>. They did do a great job, so
+            if you're interested be sure to check them out - and feed it to the algorithm. The following diagram shows
+            how this is done by the <a href="#code/app/actors/BatchTrainer.scala:42">batch trainer</a>.
+        </p>
+        <img src="tutorial/images/batch_training.jpg"
+             alt="Flow diagram of the training performed by the batch trainer"/>
+        <p>
+            As you can see the batch model training consists of three parts.
+        </p>
+        <ol>
+            <li>
+                An estimator is created. In our implementation we use a <a
+                href="https://en.wikipedia.org/wiki/Feature_hashing">HashingTF</a> to preprocess the data and <a
+                href="https://en.wikipedia.org/wiki/Logistic_regression">logististic
+                regression</a> as the estimation algorithm.
+                <br/>
+                Spark 1.5 introduces the idea of <a href="http://spark.apache.org/docs/latest/ml-guide.html#pipeline">pipelines</a>.
+                A pipeline by itself is just a description of a workflow. Take the following example.
+                <p id="pipeline">
+                    Your input is a tweet. Before you feed it to the evaluation algorithm you may want to remove stop
+                    words, stem the resulting text and perform whatever pre-processing step comes to mind. After that
+                    you may want to perform the HashingTF on the text. This three steps have to be performed for every
+                    tweet in your dataset. With Spark 1.5 you create the various pre-processing objects and the
+                    evaluation algorithm object (with their respective parameters) and put in the pipeline. The created
+                    pipeline can now be used by the cross validation as an evaluator (instead of only the evaluation
+                    algorithm).
+                </p>
+                <p>
+                    And this is what we've done in the application. We created a pipeline, added pre-processing steps
+                    (see the chapter about pre-processing for more information), added HashingTF and logistic regression
+                    and used it as the evaluator for the cross validation.
+                </p>
+            </li>
+            <li>
+                A <a target="_blank" href="https://en.wikipedia.org/wiki/Hyperparameter_optimization#Grid_search">parameter
+                grid</a> is used to try different parameter values of the estimator.
+            </li>
+            <li>
+                Cross validation is used to prevent overfitting (not only that, read more about <a
+                href="https://en.wikipedia.org/wiki/Cross-validation_(statistics)">cross validation on Wikipedia</a>).
+            </li>
+        </ol>
+        <h3>The <i>online</i> way</h3>
+        <p>
+            This approach is inspired by the work of the guys from <a target="_blank" href="sentiment140.com">sentiment140.com</a>.
+            They wrote about it in their paper <a
+            href="http://cs.stanford.edu/people/alecmgo/papers/TwitterDistantSupervision09.pdf">Twitter Sentiment
+            Classification using Distant Supervision</a>. We use a similar approach. In the following diagram you see
+            how the approach works.
+        </p>
+        <img src="tutorial/images/online_training.jpg" alt="Flow diagram of the distant supervision approach"/>
+        <p>
+            This approach also consists of four steps.
+        </p>
+        <ol>
+            <li>
+                Collect a set of tweets (you can define the size of the set in the <a
+                href="#code/conf/application.conf:47">application.conf</a> with the parameter
+                ml.corpus.initialization.tweets). We collect this set with the <a
+                href="https://dev.twitter.com/streaming/public">streaming api of twitter</a>, <a
+                href="http://twitter4j.org/en/index.html">Twitter4j</a> and the TwitterUtils provided by spark.
+            </li>
+            <li>
+                Use distant supervision to label the tweets. This is done by labeling the tweets based on various
+                indicators. We use emoticons as the indicator of the sentiment of a tweet. If a tweet contains a
+                positive emoticon (like ":)" or ";)") it is labeled positive. Negative emoticons lead to a negative
+                label (<a href="#code/app/features/Normalizable.scala:22">list of emoticons and their labels</a>). If a
+                tweet contains emoticons of both types we use the first emoticon we find as the indicator.
+            </li>
+            <li>
+                The <a href="#code/app/actors/OnlineTrainer.scala:66">OnlineTrainer opens a stream</a>, performs the
+                pre-processing steps on each tweet and <a href="#code/app/actors/OnlineTrainer.scala:70">hands the set
+                of tweets over to the evaluator</a>.
+            </li>
+            <li>
+                The online trainer uses StreamingLogisticRegressionWithSGD as the evaluator.
+                StreamingLogisticRegressionWithSGD is an implementation (provided by Spark) of logistic regression that
+                supports streaming. This is accomplished by using <a
+                href="https://en.wikipedia.org/wiki/Stochastic_gradient_descent">stochastic gradient descent</a> instead
+                of the normal <a href="https://en.wikipedia.org/wiki/Gradient_descent">gradient descent</a> (used by
+                logistic regression).
+            </li>
+        </ol>
+        <h3 id="pre-processing">The pre-processing</h3>
+        Spark in it's current version (by the time of writing this it's 1.5.2) has one flaw, if you want to share your
+        code between the classic and the online evaluator. The online evaluator doesn't support the pipeline. To
+        overcome this we created the <a href="#code/app/features/Transformer.scala">Transformer</a>. The
+        transformer is a function that maps a string (e.g. a tweet) to a sequence of strings.
+    </div>
 </body>
 </html>
