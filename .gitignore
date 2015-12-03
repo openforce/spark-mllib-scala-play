@@ -35,3 +35,7 @@ data/derby.log
 data/metastore_db/
 data/trainingandtestdata.bkp/
 .sbtopts
+.sbtserver
+project/.sbtserver.lock
+.ensime
+.ensime_cache/

@@ -26,8 +26,6 @@ object Classifier {
 
   case class Classify(token: String)
 
-  case class UpdateModel(model: PipelineModel)
-
   case class Point(tweet: String, tokens: Seq[String])
 
   case class ClassificationResult(batchModelResult: Seq[LabeledTweet], onlineModelResult: Seq[LabeledTweet])

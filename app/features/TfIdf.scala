@@ -4,6 +4,7 @@ import org.apache.spark.mllib.feature.{IDF, HashingTF}
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 import twitter.Tweet
+import features.Transformers.default._
 
 case class TfIdf(corpus: RDD[Tweet]) extends Serializable {
 
@@ -13,8 +14,8 @@ case class TfIdf(corpus: RDD[Tweet]) extends Serializable {
 
   val idf = new IDF().fit(tf.transform(corpus.map(_.tokens)))
 
-  def tf(text: Set[String]): Vector = tf.transform(text)
+  def tf(text: Seq[String]): Vector = tf.transform(text)
 
-  def tfIdf(text: Set[String]): Vector = idf.transform(tf.transform(text))
+  def tfIdf(text: Seq[String]): Vector = idf.transform(tf.transform(text))
 
 }

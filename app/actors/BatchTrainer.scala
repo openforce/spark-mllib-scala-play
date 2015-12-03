@@ -13,6 +13,7 @@ import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SQLContext}
 import twitter.Tweet
+import features.Transformers.default._
 
 object BatchTrainer {
 
@@ -41,7 +42,7 @@ class BatchTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends A
     case Train(corpus: RDD[Tweet]) =>
       log.debug(s"Received Train message with tweets corpus")
       log.info(s"Start batch training")
-      val data: DataFrame = corpus.map(t => (t.text, t.sentiment, t.tokens.toSeq)).toDF("tweet", "label", "tokens")
+      val data: DataFrame = corpus.map(t => (t.text, t.sentiment, t.tokens)).toDF("tweet", "label", "tokens")
       val hashingTF = new HashingTF()
         .setInputCol("tokens")
         .setOutputCol("features")

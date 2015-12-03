@@ -11,6 +11,7 @@ import play.api.Play.{configuration, current}
 import twitter.Tweet
 import twitter4j.auth.OAuthAuthorization
 import util.SentimentIdentifier._
+import features.Transformers.default._
 
 object CorpusInitializer {
 

@@ -2,7 +2,7 @@ import play.sbt.PlayScala
 
 name := """spark-mllib-scala-play"""
 
-version := "0.1.0"
+version := "0.2.0-SNAPSHOT"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 
@@ -10,16 +10,16 @@ scalaVersion := "2.11.7"
 
 val sparkVersion = "1.5.2"
 
-// Needed as SBT's classloader doesn't work well with Spark
-fork := true
+// // Needed as SBT's classloader doesn't work well with Spark
+// fork := true
 
-// BUG: unfortunately, it's not supported right now
-fork in console := true
+// // BUG: unfortunately, it's not supported right now
+// fork in console := true
 
 javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
 
 // add a JVM option to use when forking a JVM for 'run'
-javaOptions ++= Seq("-Xmx2G")
+// javaOptions ++= Seq("-Xmx2G")
 
 scalacOptions ++= Seq("-deprecation", "-unchecked")
 
@@ -28,7 +28,8 @@ resolvers ++= Seq(
   Resolver.mavenLocal,
   "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository",
   "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/",
-  "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/"
+  "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/",
+   Resolver.url("Typesafe Ivy releases", url("https://repo.typesafe.com/typesafe/ivy-releases"))(Resolver.ivyStylePatterns)
   )
 
 libraryDependencies ++= Seq(
@@ -84,4 +85,5 @@ cleanupCommands in console :=
   s"""
      |sc.stop()
    """.stripMargin
+
 
