@@ -74,7 +74,7 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
 
     case Corpus(c: RDD[Tweet]) =>
       corpus = Some(c)
-      dfCorpus = Some(c.map(t => (t.tokens.toSeq, t.sentiment)).toDF("tokens", "label"))
+      dfCorpus = Some(c.map(t => (t.tokens, t.sentiment)).toDF("tokens", "label"))
 
     case Subscribe =>
       context.watch(sender)

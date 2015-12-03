@@ -1,25 +1,27 @@
 package actors
 
-import actors.Director.OnlineTrainingFinished
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import actors.Director.{OnlineTrainerRestarted, OnlineTrainingFinished}
+import akka.actor.SupervisorStrategy.Restart
+import akka.actor._
 import akka.event.LoggingReceive
+import features.Transformers.default._
 import features.{Features, TfIdf}
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.classification.{LogisticRegressionModel, StreamingLogisticRegressionWithSGD}
 import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
+import org.apache.spark.streaming.scheduler.{StreamingListener, StreamingListenerReceiverError, StreamingListenerReceiverStopped}
 import org.apache.spark.streaming.twitter.TwitterUtils
 import org.apache.spark.streaming.{Duration, StreamingContext}
 import play.api.Play.{configuration, current}
 import twitter.Tweet
 import twitter4j.auth.OAuthAuthorization
 import util.SentimentIdentifier
-import features.Transformers.default._
 
 object OnlineTrainer {
 
-  def props(sparkContext: SparkContext, director: ActorRef) = Props(new OnlineTrainer(sparkContext, director: ActorRef))
+  def props(sparkContext: SparkContext, director: ActorRef) = Props(new OnlineTrainer(sparkContext, director))
 
   val dumpCorpus = configuration.getBoolean("ml.corpus.dump").getOrElse(false)
 
@@ -49,13 +51,26 @@ class OnlineTrainer(sparkContext: SparkContext, director: ActorRef) extends Acto
 
   import sqlContext.implicits._
 
-  override def postStop() = ssc.stop(false)
+  override def postStop() = {
+    log.debug("Stopping streaming context")
+    ssc.stop(false, true)
+  }
+
+  override def preStart() = {
+    log.debug(s"Pre-Start online-trainer")
+  }
+
+  override def postRestart(reason: Throwable) = {
+    super.postRestart(reason)
+    log.debug(s"Post-Restart online-trainer due to $reason")
+    context.parent ! OnlineTrainerRestarted
+  }
 
   override def receive = LoggingReceive {
 
     case Train(corpus) =>
       log.debug(s"Received Train message with tweets corpus")
-      if (dumpCorpus) corpus.map(t => (t.tokens.toSeq, t.sentiment)).toDF().write.parquet(dumpPath)
+      if (dumpCorpus) corpus.map(t => (t.tokens, t.sentiment)).toDF().write.parquet(dumpPath)
       val tfIdf = TfIdf(corpus)
       maybeTfIdf = Some(tfIdf)
       logisticRegression = Some(new StreamingLogisticRegressionWithSGD()
@@ -68,6 +83,12 @@ class OnlineTrainer(sparkContext: SparkContext, director: ActorRef) extends Acto
         .map { Tweet(_) }
         .map(tweet => tweet.toLabeledPoint { _ => tfIdf.tf(tweet.tokens)})
       logisticRegression.map(lr => lr.trainOn(stream))
+      ssc.addStreamingListener(new StreamingListener {
+        override def onReceiverStopped(receiverStopped: StreamingListenerReceiverStopped) = {
+          log.debug(s"Stream receiver stopped")
+          self ! Kill
+        }
+        })
       ssc.start()
       director ! OnlineTrainingFinished
 

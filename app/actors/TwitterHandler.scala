@@ -47,6 +47,11 @@ class TwitterHandler(sparkContext: SparkContext, configuration: Configuration) e
 
   val log = Logger(this.getClass)
 
+  override def preRestart(reason: Throwable, message: Option[Any]) = {
+    super.preRestart(reason, message)
+    log.debug(s"Pre-Restart twitter-handler due to $reason")
+  }
+
   override def receive = LoggingReceive {
 
     case Fetch(keyword) =>

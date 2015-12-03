@@ -1,7 +1,7 @@
 package actors
 
 import actors.StatisticsServer.Corpus
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor._
 import akka.event.LoggingReceive
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
@@ -17,6 +17,8 @@ object CorpusInitializer {
 
   def props(sparkContext: SparkContext, batchTrainer: ActorRef, onlineTrainer: ActorRef, eventServer: ActorRef, statisticsServer: ActorRef) =
     Props(new CorpusInitializer(sparkContext, batchTrainer, onlineTrainer, eventServer, statisticsServer))
+
+  case object Init
 
   case object InitFromStream
 
@@ -48,19 +50,21 @@ class CorpusInitializer(sparkContext: SparkContext, batchTrainer: ActorRef, onli
 
   var stop = false
 
-
   override def postStop() = {
     ssc.stop(false)
   }
 
   override def preStart() = {
-    if(streamedCorpus)
-      self ! InitFromStream
-    else
-      self ! LoadFromFs
+    self ! Init
   }
 
   override def receive = LoggingReceive {
+
+    case Init =>
+      if(streamedCorpus)
+        self ! InitFromStream
+      else
+        self ! LoadFromFs
 
     case Finish =>
       log.debug(s"Received Finish message")
@@ -74,7 +78,6 @@ class CorpusInitializer(sparkContext: SparkContext, batchTrainer: ActorRef, onli
       val trainMessage = Train(tweets)
       batchTrainer ! trainMessage
       onlineTrainer ! trainMessage
-      context.stop(self)
       statisticsServer ! Corpus(tweets)
       eventServer ! "Corpus initialization finished"
 

@@ -34,7 +34,10 @@ resolvers ++= Seq(
 
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "2.2.4" % "test",
-  "com.typesafe.akka" %% "akka-testkit" % "2.3.14" % "test",
+  "com.typesafe.akka" %% "akka-actor" % "2.4.1",
+  "com.typesafe.akka" %% "akka-testkit" % "2.4.1" % "test",
+  "com.typesafe.akka" %% "akka-slf4j" % "2.4.1",
+//  "com.typesafe.akka" %% "akka-testkit" % "2.3.14" % "test",
   "org.apache.spark" %% "spark-core" % sparkVersion,
   "org.apache.spark" %% "spark-sql" % sparkVersion,
   "org.apache.spark" %% "spark-mllib" % sparkVersion,
