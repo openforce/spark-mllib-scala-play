@@ -15,7 +15,7 @@ export class API {
      * @returns {*}
      * @private
      */
-    _checkStatus(response) {
+    static _checkStatus(response) {
         if (response.status >= 200 && response.status < 300) {
             return response;
         } else {
@@ -25,26 +25,73 @@ export class API {
         }
     }
 
+    static _reject(reject) {
+        return (ex) => {
+            console.error(ex );
+            reject(ex);
+        };
+    }
+
+    static get(route) {
+        return new Promise((resolve, reject) => {
+            fetch(route)
+                .then(API._checkStatus)
+                .then(resolve)
+                .catch(API._reject(reject));
+        });
+    }
+
+    static getAuthenticated(route) {
+        return new Promise((resolve, reject) => {
+            fetch(route, {
+                credentials: 'same-origin'
+            })  .then(API._checkStatus)
+                .then(resolve)
+                .catch(API._reject(reject));
+        });
+    }
+
+    static simpleRequest(route) {
+        return new Promise((resolve, reject) => {
+            API.get(route)
+                .then(resolve)
+                .catch(reject)
+        });
+    }
+
+    static simpleAuthenticatedRequest(route) {
+        return new Promise((resolve, reject) => {
+            API.getAuthenticated(route)
+                .then(resolve)
+                .catch(reject)
+        });
+    }
+
+    static authenticated() {
+        return API.simpleAuthenticatedRequest(Routes.authenticated);
+    }
+
     /**
      * calls the classify action and returns a promise
      * the promise will be resolved with the parsed json or rejected if there was an error
      *
      * @param keyword
-     * @param cb
      */
-    classify(keyword, cb) {
-        var url = Routes.classify(keyword);
-
+    static classify(keyword) {
         return new Promise((resolve, reject) => {
-            fetch(url)
-                .then(this._checkStatus)
+            API.getAuthenticated(Routes.classify(keyword))
                 .then((response) => response.json())
-                .then((json) => resolve(json))
-                .catch((ex) => {
-                    console.log(`error occured ${ex}`);
-                    reject(ex);
-                })
+                .then(resolve)
+                .catch(reject)
         });
+    }
+
+    static keys() {
+        return API.simpleRequest(Routes.keys);
+    }
+
+    static logout() {
+        return API.simpleAuthenticatedRequest(Routes.logout);
     }
 
 }

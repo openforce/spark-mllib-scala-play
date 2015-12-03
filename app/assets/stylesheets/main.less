@@ -8,6 +8,16 @@ html, body {
   height: 100%;
 }
 
+.keys-missing, .not-authenticated {
+  overflow: hidden;
+}
+
+.keys-missing {
+  .push-down, nav.navbar.navbar-default.navbar-background {
+    background: #980000;
+  }
+}
+
 h1, h2, h3, h4, h5, h6, .heading {
   font-family: 'Roboto', sans-serif;
   font-weight: 200;
@@ -91,6 +101,7 @@ nav.navbar.navbar-default {
   .navbar-right {
     position: absolute;
     right: 0;
+    z-index: 1;
   }
 
   .navbar-brand {
@@ -106,7 +117,8 @@ nav.navbar.navbar-default {
     margin-top: 10px;
 
     li {
-      padding: 20px 30px;
+      padding: 20px;
+      display: inline-block;
 
       a {
         color: #fff;
@@ -177,16 +189,68 @@ nav.navbar.navbar-default {
     }
   }
 
-  &.search {
+  &.show-results {
+    top: ~"calc(100% - 100px)";
+
+    paper-input {
+      width: 98%;
+    }
+  }
+
+  &.actions {
+    display: none;
     top: ~"calc(20% + 275px)";
     transition: .3s ease top;
+  }
 
-    &.show-results {
-      top: ~"calc(100% - 100px)";
+  &.login, &.keys-missing-error {
+    h2 {
+      color: #fff;
+    }
 
-      paper-input {
-        width: 98%;
-      }
+    p {
+      color: #f2f2f2;
+    }
+  }
+
+  &.keys-missing-error {
+    top: 250px;
+
+    h2 {
+      margin-bottom: 32px;
+    }
+
+    p, pre {
+      margin-left: auto;
+      margin-right: auto;
+      text-align: left;
+      width: 650px;
+    }
+
+    pre {
+      padding-left: 20px;
+    }
+  }
+
+  &.login {
+    .twitter-login {
+      background: url("/public-assets/images/sign-in-with-twitter-gray.png") center center no-repeat;
+      height: 35px;
+      width: 160px;
+      border: none;
+    }
+  }
+
+  &.search {
+    .message {
+      display: block;
+      font-size: 16px;
+      padding: 10px 20px;
+      background: #fff;
+      width: 640px;
+      margin: -45px auto 0;
+      z-index: 1;
+      position: relative;
     }
 
     paper-input {
@@ -224,6 +288,53 @@ nav.navbar.navbar-default {
         }
       }
     }
+  }
+}
+
+.keys-missing, .not-authenticated {
+  nav.navbar.navbar-default {
+    .heading {
+      opacity: 1;
+    }
+  }
+}
+
+.not-authenticated {
+  .navbar.navbar-default .logout {
+    display: none;
+  }
+
+  .heading-container {
+    &.headings {
+      top: 10px;
+
+      h1, h2, .icons {
+        display: none;
+      }
+    }
+
+    &.actions.login {
+      top: 300px;
+      display: block;
+    }
+  }
+}
+
+.keys-missing {
+  .heading-container.actions {
+    &.login {
+      display: none;
+    }
+
+    &.keys-missing-error {
+      display: block;
+    }
+  }
+}
+
+.authenticated {
+  .heading-container.actions.search {
+    display: block;
   }
 }
 
