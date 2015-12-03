@@ -79,8 +79,10 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
     case Subscribe =>
       context.watch(sender)
       clients += sender
-      batchTrainerModel map testBatchModel foreach (statistics => sender ! statistics)
-
+      for {
+        model <- batchTrainerModel
+        statistics <- testBatchModel(model)
+      } yield sender ! statistics
 
     case Unsubscribe =>
       context.unwatch(sender)
