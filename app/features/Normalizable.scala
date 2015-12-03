@@ -21,6 +21,8 @@ trait Normalizable[T] extends Function1[String, String] with Serializable {
 
 object SentimentNormalizer extends Normalizable[String] {
 
+  // Data cleaning inspired by Luis Pedro Coelho and Willi Richert's great book: https://www.packtpub.com/big-data-and-business-intelligence/building-machine-learning-systems-python-second-edition
+
   val good = "good"
   val bad = "bad"
   val sad = "sad"
@@ -81,19 +83,20 @@ object SentimentNormalizer extends Normalizable[String] {
 object ShortFormNormalizer extends Normalizable[Regex] {
 
   val mapping = Map(
-    "\br\b".r -> "you",
-    "\bhaha\b".r -> "ha",
-    "\bhahaha\b".r -> "ha",
-    "\bdon't\b".r -> "do not",
-    "\bdoesn't\b".r -> "does not",
-    "\bdidn't\b".r -> "did not",
-    "\bhasn't\b".r -> "has not",
-    "\bhaven't\b".r -> "have not",
-    "\bhadn't\b".r -> "had not",
-    "\bwon't\b".r -> "will not",
-    "\bwouldn't\b".r -> "would not",
-    "\bcan't\b".r -> "can not",
-    "\bcannot\b".r -> "can not"
+    "\\byou're\\b".r -> "you are",
+    "\\bu\\b".r -> "you",
+    "\\bhaha\\b".r -> "ha",
+    "\\bhahaha\\b".r -> "ha",
+    "\\bdon't\\b".r -> "do not",
+    "\\bdoesn't\\b".r -> "does not",
+    "\\bdidn't\\b".r -> "did not",
+    "\\bhasn't\\b".r -> "has not",
+    "\\bhaven't\\b".r -> "have not",
+    "\\bhadn't\\b".r -> "had not",
+    "\\bwon't\\b".r -> "will not",
+    "\\bwouldn't\\b".r -> "would not",
+    "\\bcan't\\b".r -> "can not",
+    "\\bcannot\\b".r -> "can not"
   )
 
   override def transformFn(sentence: String) = (shortForm, extendedForm) => shortForm.replaceAllIn(sentence, extendedForm)
@@ -104,8 +107,8 @@ object NoiseNormalizer extends Normalizable[Regex] {
 
   val mapping = Map(
     "([a-z])\\1\\1+".r -> "$1$1", // shorten duplicate chars
-    "@\\S+".r -> "USERNAME",      // replace username
-    "http:\\/\\/\\S+".r -> "URL",  // replace url
+    "@\\S+".r -> "username",      // replace username
+    "http:\\/\\/\\S+".r -> "url",  // replace url
     "[-_]".r -> " "
   )
 
