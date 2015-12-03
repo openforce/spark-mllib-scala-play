@@ -52,7 +52,6 @@ object TwitterHelper {
 
   val numTweetsToCollect = 10
 
-  // TODO document in README.md
   val twitterFetchUrl = configuration.getString("twitter.fetch.url").get
 
   val log = Logger(this.getClass)

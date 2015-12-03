@@ -13,6 +13,8 @@ Assuming that you have [Java 8](http://www.oracle.com/technetwork/java/javase/do
 1. Insert your Twitter access and consumer key/token pairs in `application.conf`. For generating a token, please refer to [dev.twitter.com](https://dev.twitter.com/oauth/overview/application-owner-access-tokens).
 1. Launch SBT: `sbt run` or ACTIVATOR: `./activator ui` (If you want to start the application as Typesafe Activator Template)
 1. Navigate your browser to: <http://localhost:9000>
+1. If necessary change the twitter.redirect.url in application.conf to the url the application actually uses
+1. If necessary (if twitter changes the url to its *fetch tweets service*) change the twitter.fetch.url in application.conf to the new one. Ensure that the last url parameter is the query string, the application will append the keyword at the end of the url.
 
 If starting the application takes a very long time or even times out it may be due to a known [Activator issue](https://github.com/typesafehub/activator/issues/1036).
 In that case do the following before starting with `sbt run`.
