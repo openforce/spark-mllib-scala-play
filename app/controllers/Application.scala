@@ -34,7 +34,7 @@ class Application @Inject()(system: ActorSystem, sparkContext: SparkContext, twi
 
   val director = system.actorOf(Director.props(sparkContext, eventServer, statisticsServer), "director")
 
-  implicit val timeout = Timeout(5 seconds)
+  implicit val timeout = Timeout(10 seconds)
 
   def classify(keyword: String) = Action.async {
     (for {
