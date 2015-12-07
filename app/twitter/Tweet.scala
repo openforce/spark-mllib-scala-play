@@ -18,9 +18,11 @@ object LabeledTweet {
 
 case class Tweet(text: String, sentiment: Double) extends Serializable {
 
+  def features(implicit hashingTF: HashingTF, transformer: Transformer): Vector = hashingTF.transform(tokens)
+
   def tokens(implicit transformer: Transformer): Seq[String] = transformer.transform(text)
 
-  def toLabeledPoint(implicit hashingTF: HashingTF, transformer: Transformer): LabeledPoint = LabeledPoint(sentiment, hashingTF.transform(tokens))
+  def toLabeledPoint(implicit hashingTF: HashingTF, transformer: Transformer): LabeledPoint = LabeledPoint(sentiment, features)
 
   def toLabeledPoint(f: String => Vector): LabeledPoint = LabeledPoint(sentiment, f(text))
 

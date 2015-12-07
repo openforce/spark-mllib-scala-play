@@ -6,7 +6,9 @@ import akka.event.LoggingReceive
 import features.{Features, TfIdf}
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.classification.{LogisticRegressionModel, StreamingLogisticRegressionWithSGD}
+import org.apache.spark.mllib.feature.{StandardScalerModel, HashingTF, StandardScaler}
 import org.apache.spark.mllib.linalg.{Vector, Vectors}
+import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.streaming.twitter.TwitterUtils
@@ -45,40 +47,41 @@ class OnlineTrainer(sparkContext: SparkContext, director: ActorRef) extends Acto
 
   var logisticRegression: Option[StreamingLogisticRegressionWithSGD] = None
 
-  var maybeTfIdf: Option[TfIdf] = None
+  import TfIdf._
 
   import sqlContext.implicits._
 
   override def postStop() = ssc.stop(false)
 
-  override def receive = LoggingReceive {
+  override def receive = training
+
+  def training = LoggingReceive {
 
     case Train(corpus) =>
       log.debug(s"Received Train message with tweets corpus")
-      if (dumpCorpus) corpus.map(t => (t.tokens.toSeq, t.sentiment)).toDF().write.parquet(dumpPath)
-      val tfIdf = TfIdf(corpus)
-      maybeTfIdf = Some(tfIdf)
-      logisticRegression = Some(new StreamingLogisticRegressionWithSGD()
-        .setNumIterations(200)
-        .setInitialWeights(Vectors.zeros(Features.coefficients))
-        .setStepSize(1.0))
+      if (dumpCorpus) corpus.map(t => (t.tokens, t.sentiment)).toDF().write.parquet(dumpPath)
+      val scalerModel = new StandardScaler(withMean = true, withStd = true).fit(corpus.map(t => t.features.toDense))
+      logisticRegression = Some(new StreamingLogisticRegressionWithSGD().setInitialWeights(Vectors.zeros(Features.coefficients)))
       log.info(s"Start twitter stream for online training")
       val stream = TwitterUtils.createStream(ssc, twitterAuth, filters = SentimentIdentifier.sentimentEmoticons)
         .filter(t => t.getUser.getLang == "en" && !t.isRetweet)
-        .map { Tweet(_) }
-        .map(tweet => tweet.toLabeledPoint { _ => tfIdf.tf(tweet.tokens)})
-      logisticRegression.map(lr => lr.trainOn(stream))
+        .map(Tweet(_).toLabeledPoint)
+        .map(point => LabeledPoint(point.label, scalerModel.transform(point.features.toDense)))
+      logisticRegression foreach (_.trainOn(stream))
       ssc.start()
+      context.become(predicting(scalerModel))
       director ! OnlineTrainingFinished
+
+  }
+
+  def predicting(scalerModel: StandardScalerModel) = LoggingReceive {
 
     case GetFeatures(fetchResponse) =>
       log.debug(s"Received GetFeatures message")
-      val features = maybeTfIdf map { tfIdf =>
-        val rdd: RDD[String] = sparkContext.parallelize(fetchResponse.tweets)
-        rdd.cache()
-        rdd map { t => (t, tfIdf.tfIdf(Tweet(t).tokens)) }
-      }
-      sender ! OnlineFeatures(features)
+      val rdd = sparkContext
+        .parallelize(fetchResponse.tweets)
+        .map(text => (text, scalerModel.transform(Tweet(text).features.toDense)))
+      sender ! OnlineFeatures(Some(rdd))
 
     case GetLatestModel =>
       log.debug(s"Received GetLatestModel message")

@@ -8,14 +8,16 @@ import features.Transformers.default._
 
 case class TfIdf(corpus: RDD[Tweet]) extends Serializable {
 
-  import Features._
+  private val idf = new IDF().fit(TfIdf.tf.transform(corpus.map(_.tokens)))
 
-  val tf = new HashingTF(coefficients)
+  def tf(text: Seq[String]): Vector = TfIdf.tf.transform(text)
 
-  val idf = new IDF().fit(tf.transform(corpus.map(_.tokens)))
+  def tfIdf(text: Seq[String]): Vector = idf.transform(TfIdf.tf.transform(text))
 
-  def tf(text: Seq[String]): Vector = tf.transform(text)
+}
 
-  def tfIdf(text: Seq[String]): Vector = idf.transform(tf.transform(text))
+object TfIdf {
+
+  implicit val tf = new HashingTF(Features.coefficients)
 
 }
