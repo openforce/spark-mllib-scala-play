@@ -8,7 +8,7 @@
     <h3>powered by Apache Spark, MLlib, Scala, Akka, and Play Framework</h3>
 
     <p>
-        With this tutorial template we show how to automatically classify the sentiment of Twitter messages leveraging the Typesafe Stack and Apache Spark. These messages are classified as either positive or negative with respect to a query term. Users who want to research the sentiment of products before purchase, or companies that want to monitor the public sentiment of their brands can make use of this kind of application. The Activator template will consist of a backend component using Scala, Spark, Akka and the Play Framework in their most recent versions. The core part will demonstrate the usage of machine learning algorithms for classifying the sentiment of Twitter messages using Apache Spark and MLlib. The fundamental idea of sentiment classification used in this template is based on <a href="http://cs.stanford.edu/people/alecmgo/papers/TwitterDistantSupervision09.pdf"  target="_blank">the paper by Alec Go et al.]</a> and its related implementation by <a  href="http://www.sentiment140.com"  target="_blank">Sentiment140</a>.
+        With this tutorial template we show how to automatically classify the sentiment of Twitter messages leveraging the Typesafe Stack and Apache Spark. These messages are classified as either positive or negative with respect to a query term. Users who want to research the sentiment of products before purchase, or companies that want to monitor the public sentiment of their brands can make use of this kind of application. The Activator template will consist of a backend component using Scala, Spark, Akka and the Play Framework in their most recent versions. The core part will demonstrate the usage of machine learning algorithms for classifying the sentiment of Twitter messages using Apache Spark and MLlib. The fundamental idea of sentiment classification used in this template is based on <a href="http://cs.stanford.edu/people/alecmgo/papers/TwitterDistantSupervision09.pdf"  target="_blank">the paper by Alec Go et al.</a> and its related implementation by <a  href="http://www.sentiment140.com"  target="_blank">Sentiment140</a>.
     </p>
 </div>
 <div>
@@ -143,14 +143,14 @@ The <a href="#code/app/actors/EventServer.scala">EventServer</a> is created by t
             (see <a target="_blank" href="https://en.wikipedia.org/wiki/Statistical_classification">statistical
             classification on Wikipedia</a> for more information about the problem).
         </p>
-        <h3>The classic approach</h3>
+        <h3>Batch Learning</h3>
         <p>
-            The classic approach is to use a classification algorithm (we used <a
-            href="https://en.wikipedia.org/wiki/Logistic_regression">logistic regression</a>) with supervised training.
-            In our case that meant creating a set of labeled tweets - we actually didn't create this set ourselves, but
-            got it from <a target="_blank" href="http://sentiment140.com">Sentiment140</a>. They did do a great job, so
-            if you're interested be sure to check them out - and feed it to the algorithm. The following diagram shows
-            how this is done by the <a href="#code/app/actors/BatchTrainer.scala:42">batch trainer</a>.
+            Batch learning is a <a target="_blank" href="https://en.wikipedia.org/wiki/Supervised_learning">supervised learning</a> approach,
+            where an estimator (e.g. <a target="_blank" href="https://en.wikipedia.org/wiki/Logistic_regression">logistic regression</a>)
+            gets optimized according to given labels within the training data.
+            In our case that meant creating a set of labeled tweets (a so-called corpus) and feed it to the algorithm. We used
+            the corpus provided by <a target="_blank" href="http://sentiment140.com">Sentiment140</a>. They did a great job, so
+            be sure to check their work out as well. The following diagram shows how this is done by the <a href="#code/app/actors/BatchTrainer.scala:42">BatchTrainer</a>.
         </p>
         <img src="tutorial/images/batch_training.jpg"
              alt="Flow diagram of the training performed by the batch trainer"/>
@@ -159,26 +159,22 @@ The <a href="#code/app/actors/EventServer.scala">EventServer</a> is created by t
         </p>
         <ol>
             <li>
-                An estimator is created. In our implementation we use a <a
-                href="https://en.wikipedia.org/wiki/Feature_hashing">HashingTF</a> to preprocess the data and <a
-                href="https://en.wikipedia.org/wiki/Logistic_regression">logististic
+                An estimator is created. In our implementation we use our own transformation pipeline (which is described in more detail in chapter <a href="#feature-engineering">feature engineering</a>) and a <a target="_blank"
+                href="http://spark.apache.org/docs/latest/api/scala/index.html#org.apache.spark.ml.feature.HashingTF">bag-of-words model</a> to preprocess the data and <a
+                target="_blank" href="https://en.wikipedia.org/wiki/Logistic_regression">logististic
                 regression</a> as the estimation algorithm.
                 <br/>
-                Spark 1.5 introduces the idea of <a href="http://spark.apache.org/docs/latest/ml-guide.html#pipeline">pipelines</a>.
+                Spark 1.2 introduced the idea of <a href="http://spark.apache.org/docs/latest/ml-guide.html#pipeline">pipelines</a>.
                 A pipeline by itself is just a description of a workflow. Take the following example.
                 <p id="pipeline">
-                    Your input is a tweet. Before you feed it to the evaluation algorithm you may want to remove stop
-                    words, stem the resulting text and perform whatever pre-processing step comes to mind. After that
-                    you may want to perform the HashingTF on the text. This three steps have to be performed for every
-                    tweet in your dataset. With Spark 1.5 you create the various pre-processing objects and the
-                    evaluation algorithm object (with their respective parameters) and put in the pipeline. The created
-                    pipeline can now be used by the cross validation as an evaluator (instead of only the evaluation
-                    algorithm).
-                </p>
-                <p>
-                    And this is what we've done in the application. We created a pipeline, added pre-processing steps
-                    (see the chapter about pre-processing for more information), added HashingTF and logistic regression
-                    and used it as the evaluator for the cross validation.
+                    Your input is a tweet. Before you can feed it to an estimator you may want to remove stop
+                    words, stem the resulting text and perform whatever pre-processing step comes to mind before you finally convert
+                    it into a mathematical representation, e.g. by using <code>HashingTF</code>,
+                    <a target="_blank" href="https://spark.apache.org/docs/latest/mllib-feature-extraction.html#tf-idf">TF-IDF</a> or
+                    <a target="_blank" href="https://spark.apache.org/docs/latest/mllib-feature-extraction.html#word2vec">Word2Vec</a>.
+                    These steps have to be performed for every tweet in your dataset. With Spark 1.5 you create the various transformers and the
+                    estimator (with their respective parameters) and put them into a pipeline. The created
+                    pipeline can now be used for cross validation (instead of only the evaluation algorithm).
                 </p>
             </li>
             <li>
@@ -186,56 +182,60 @@ The <a href="#code/app/actors/EventServer.scala">EventServer</a> is created by t
                 grid</a> is used to try different parameter values of the estimator.
             </li>
             <li>
-                Cross validation is used to prevent overfitting (not only that, read more about <a
-                href="https://en.wikipedia.org/wiki/Cross-validation_(statistics)">cross validation on Wikipedia</a>).
+                Cross validation is a tuning technique to find the best hyperparameters for your estimator. You just need to
+                define a set of values for each estimator or transformer in your pipeline, provide an evaluator and the pipeline itself.
+                Then you need to define the number of folds which defines in how many partitions your corpus is splitted
+                in order to perform training and validation. That is you define a number of hold-out sets used for testing
+                the parameter grid. See also <a target="_blank" href="https://spark.apache.org/docs/latest/ml-guide.html#example-model-selection-via-cross-validation">model selection via cross-validation</a>.
             </li>
         </ol>
-        <h3>The <i>online</i> way</h3>
+        <h3>Online Learning</h3>
         <p>
-            This approach is inspired by the work of the guys from <a target="_blank" href="sentiment140.com">sentiment140.com</a>.
-            They wrote about it in their paper <a
-            href="http://cs.stanford.edu/people/alecmgo/papers/TwitterDistantSupervision09.pdf">Twitter Sentiment
-            Classification using Distant Supervision</a>. We use a similar approach. In the following diagram you see
+            This approach is inspired by <a href="http://cs.stanford.edu/people/alecmgo/papers/TwitterDistantSupervision09.pdf" target="_blank">the work of Alec Go et al.</a>
+            using a technique called distant supervision. We use a similar approach by leveraging the streaming capabilities of Spark. In the following diagram you see
             how the approach works.
         </p>
         <img src="tutorial/images/online_training.jpg" alt="Flow diagram of the distant supervision approach"/>
         <p>
-            This approach consists of four steps.
+            This approach consists of the following steps.
         </p>
         <ol>
             <li>
-                Collect a set of tweets (you can define the size of the set in the <a
-                href="#code/conf/application.conf:47">application.conf</a> with the parameter
-                ml.corpus.initialization.tweets). We collect this set with the <a
+                You can choose whether to collect a set of tweets via distant supervision (which is done via the <a
                 href="https://dev.twitter.com/streaming/public">streaming api of twitter</a>, <a
-                href="http://twitter4j.org/en/index.html">Twitter4j</a> and the TwitterUtils provided by spark.
-            </li>
-            <li>
-                Use distant supervision to label the tweets. This is done by labeling the tweets based on various
-                indicators. We use emoticons as the indicator of the sentiment of a tweet. If a tweet contains a
-                positive emoticon (like ":)" or ";)") it is labeled positive. Negative emoticons lead to a negative
-                label (<a href="#code/app/features/Normalizable.scala:22">list of emoticons and their labels</a>). If a
-                tweet contains emoticons of both types we use the first emoticon we find as the indicator.
+                href="http://twitter4j.org/en/index.html">Twitter4j</a> and the <code>TwitterUtils</code> provided by Spark),
+                or to use the same corpus as with batch learning. You can configure this in the <a
+                href="#code/conf/application.conf:47">application.conf</a> with the parameter
+                <code>ml.corpus.initialization.streamed</code>). The resulting corpus is used for fitting for instance a TF-IDF model and
+                for generating statistics (see <a href="#code/app/actors/StatisticsServer.scala">StatisticsServer</a>).
+                <br>
+                Distant supervision is done by labeling the tweets based on various indicators. We use emoticons as
+                the indicator of the sentiment of a tweet. If a tweet contains a positive emoticon (like ":)" or ";)")
+                it is labeled positive. Negative emoticons lead to a negative label (<a href="#code/app/util/SentimentIdentifier.scala">list of emoticons and their labels</a>).
+                If a tweet contains emoticons of both types we use the first emoticon we find as the indicator.
             </li>
             <li>
                 The <a href="#code/app/actors/OnlineTrainer.scala:66">OnlineTrainer opens a stream</a>, performs the
-                pre-processing steps on each tweet and <a href="#code/app/actors/OnlineTrainer.scala:70">hands the set
-                of tweets over to the evaluator</a>.
+                pre-processing steps on each tweet and hands a <code>DStream</code> of <code>LabeledPoints</code> over to the <a href="#code/app/actors/OnlineTrainer.scala:70">
+                estimator</a>.
             </li>
             <li>
-                The online trainer uses StreamingLogisticRegressionWithSGD as the evaluator.
-                StreamingLogisticRegressionWithSGD is an implementation (provided by Spark) of logistic regression that
-                supports streaming. This is accomplished by using <a
-                href="https://en.wikipedia.org/wiki/Stochastic_gradient_descent">stochastic gradient descent</a> instead
-                of the normal <a href="https://en.wikipedia.org/wiki/Gradient_descent">gradient descent</a> (used by
-                logistic regression).
+                The online trainer uses <code>StreamingLogisticRegressionWithSGD</code> as an estimator.
+                <code>StreamingLogisticRegressionWithSGD</code> is an implementation of logistic regression that supports streaming.
+                This is accomplished by using <a target="_blank" href="https://en.wikipedia.org/wiki/Stochastic_gradient_descent">stochastic gradient descent</a>
+                for optimization instead of the normal <a href="https://en.wikipedia.org/wiki/Gradient_descent">gradient descent</a>.
             </li>
         </ol>
-        <h3 id="pre-processing">The pre-processing</h3>
-        Spark in it's current version (by the time of writing this it's 1.5.2) has one flaw, if you want to share your
-        code between the classic and the online evaluator. The online evaluator doesn't support the pipeline. To
-        overcome this we created the <a href="#code/app/features/Transformer.scala">Transformer</a>. The
-        transformer is a function that maps a string (e.g. a tweet) to a sequence of strings.
+        <h3 id="feature-engineering">Feature Engineering</h3>
+        Since the lower-level <code>spark.mllib</code> API and thus the <a target="_blank" href="http://spark.apache.org/docs/latest/api/scala/index.html#org.apache.spark.mllib.classification.StreamingLogisticRegressionWithSGD">StreamingLogisticRegressionWithSGD</a>
+        estimator used here does not support <code>Pipeline</code>s, we created our own transformation chain for tweets by using plain function composition.
+        Therefore we created our own <a href="#code/app/features/Transformer.scala:3">Transformer</a> type and provided a <a href="#code/app/features/Transformer.scala:13">DefaultTransformer</a>
+        instance which composes tranformations for <a href="#code/app/features/Normalizable.scala">normalization</a>, <a href="#code/app/features/Stemmable.scala">stemming</a>
+        and <a href="#code/app/features/Tokenizer.scala">creating n-grams</a> which serves as a good starting point so far.
+        Now you can easily adapt tweet transformation (e.g. by adding trigrams or stopword removal) by bringing your own implicit <code>Transformer</code>
+        implementation into the surrounding scope of your <a href="#code/app/twitter/Tweet.scala:21">Tweet.tokens</a>
+        or <a href="#code/app/twitter/Tweet.scala:23">Tweet.toLabeledPoint</a> calls. In our two machine learning approaches we used our implicit
+        <code>DefaultTransformer</code> just by doing a <code>import features.Transformers.default._</code>.
     </div>
 </body>
 </html>
