@@ -3,7 +3,6 @@ package controllers
 import javax.inject.Inject
 
 import akka.actor.ActorSystem
-import play.api.Logger
 import play.api.Play._
 import play.api.libs.oauth._
 import play.api.mvc._
