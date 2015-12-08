@@ -65,7 +65,7 @@
                 <div>
                     <p>
                         Before you can use the application please login with your Twitter account.<br />
-                        <small>(This is needed because of Twitter api regulations.</small>)
+                        <small>(This is needed because of Twitter API regulations.</small>)
                     </p>
                 </div>
                 <a href="@routes.Twitter.authenticate">
@@ -73,13 +73,13 @@
                 </a>
             </div>
             <div class="heading-container actions keys-missing-error">
-                <h2>Consumer key and/or secret are missing</h2>
+                <h2>Your Twitter access token and consumer key/secret configuration is missing or incomplete!</h2>
                 <p>
-                    Because twitter doesn't allow key/token/password sharing (which makes sense) you have to create an application at Twitter before you can use this application.
-                    You can create and manage your applications at <a href="https://apps.twitter.com/">https://apps.twitter.com/</a>
+                    Because Twitter prohibits key/token/password sharing (which makes sense) you have to setup an App at Twitter before you can use this application.
+                    You can create and manage your applications at <a href="https://dev.twitter.com/oauth/overview/application-owner-access-tokens">https://dev.twitter.com</a>
                 </p>
                 <p>
-                    After you've obtained your consumer key and secret, enter them in your application.conf like this:
+                    After you've created your Twitter App you can obtain your consumer key and access token with secrets. Please enter them in your application.conf like this:
                 </p>
                 <p>
                     <pre>
@@ -87,6 +87,10 @@ twitter {
   consumer {
     key = "CONSUMER_KEY"
     secret = "CONSUMER_SECRET"
+  }
+  access {
+    token = "ACCESS_TOKEN"
+    secret = "ACCESS_TOKEN_SECRET"
   }
 }
                     </pre>
@@ -98,7 +102,6 @@ twitter {
                 @content
             </div>
             <paper-toast id="event-toast"></paper-toast>
-                <!--<event-log></event-log>-->
         </template>
 
         <link rel="import" href='@routes.Assets.at("templates/libraries.html")'>

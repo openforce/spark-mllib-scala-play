@@ -31,14 +31,14 @@ object TwitterHelper {
     (for {
       consumerKey <- configuration.getString("twitter.consumer.key")
       consumerSecret <- configuration.getString("twitter.consumer.secret")
-      accessTokenKey <- configuration.getString("twitter.access-token.key")
-      accessTokenSecret <- configuration.getString("twitter.access-token.secret")
+      accessToken <- configuration.getString("twitter.access.token")
+      accessTokenSecret <- configuration.getString("twitter.access.secret")
     } yield
       new ConfigurationBuilder()
         .setDebugEnabled(true)
         .setOAuthConsumerKey(consumerKey)
         .setOAuthConsumerSecret(consumerSecret)
-        .setOAuthAccessToken(accessTokenKey)
+        .setOAuthAccessToken(accessToken)
         .setOAuthAccessTokenSecret(accessTokenSecret)
         .setUseSSL(true)
         .build()).getOrElse(throw new IllegalStateException(
