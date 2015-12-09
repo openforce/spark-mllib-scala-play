@@ -15,7 +15,7 @@ import twitter.LabeledTweet
 class TwitterHandlerProxyStub extends TwitterHandlerProxy with ActorLogging {
 
   override def receive = {
-    case Fetch(keyword) => {
+    case Fetch(keyword, keys) => {
       log.debug(s"Received Fetch message")
       val tweets = Seq("The new Apple iPhone 6s is awesome", "Apple is overpriced.")
       sender ! FetchResponse(keyword, tweets)
@@ -25,7 +25,7 @@ class TwitterHandlerProxyStub extends TwitterHandlerProxy with ActorLogging {
 
 class TimingOutTwitterHandlerProxyStub extends TwitterHandlerProxy with ActorLogging {
   def receive = LoggingReceive {
-    case Fetch(keyword) =>
+    case Fetch(keyword, keys) =>
       log.debug(s"Doing nothing - forcing timeout")
   }
 }

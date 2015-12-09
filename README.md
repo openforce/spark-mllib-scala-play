@@ -10,7 +10,7 @@ Assuming that you have [Java 8](http://www.oracle.com/technetwork/java/javase/do
 
 1. Clone this repository: `git clone git@github.com:openforce/spark-mllib-scala-play.git`
 1. Change into the newly created directory: `cd spark-mllib-scala-play`
-1. Insert your Twitter access token and consumer key/secret pairs in `application.conf`. For generating a token, please refer to [dev.twitter.com](https://dev.twitter.com/oauth/overview/application-owner-access-tokens).
+1. Insert your Twitter access token and consumer key/secret pairs in `application.conf`. For generating a token, please refer to [dev.twitter.com](https://dev.twitter.com/oauth/overview/application-owner-access-tokens).  By default the application runs in single-user-mode which means the access tokens configured in your application.conf respectively local.conf will be also used for querying Twitter by keywords. This is fine when you run the application locally and just want to checkout the tutorial. If you want to deploy it publicly you would have to turn single-user-mode off so that OAuth per user is used instead. To do so change the line in your ```conf/application.conf``` to ```twitter.single-user-mode = no```.
 1. Launch SBT: `sbt run` or ACTIVATOR: `./activator ui` (If you want to start the application as Typesafe Activator Template)
 1. Navigate your browser to: <http://localhost:9000>
 1. If necessary change the twitter.redirect.url in application.conf to the url the application actually uses
@@ -36,7 +36,7 @@ The __Application__ controller serves HTTP requests from the client/browser and 
 The __Director__ is the root of the Actor hierarchy, which creates all other durable (long lived) actors except `StatisticsServer` and `EventServer`. Besides supervision of the child actors it builds the bridge between Playframework and Akka by handing over the `Classifier` `ActorRefs` to the controller. Moreover, when trainings of the estimators within `BatchTrainer` and `OnlineTrainer` are finished, this actor passes the latest Machine Learning models to the `StatisticsServer` (see Figure below). For the `OnlineTrainer` statistics generation is scheduled every 5 seconds.
 
 
-The __Classifier__ creates a `FetchResponseHandler` actor and tells the `TwitterHandler` with a `Fetch` message (and the `ActorRef` of the `FetchResponseHandler`) to get the latest Tweets by a given token or query.
+The __Classifier__ creates a `FetchResponseHandler` actor and tells the `TwitterHandler` with a `Fetch` message (and the `ActorRef` of the `FetchResponseHandler`) to get the latest Tweets by a given keyword or query.
 
 Once the __TwitterHandler__ has fetched some Tweets, the `FetchResponse` is sent to the `FetchResponseHandler`.
 

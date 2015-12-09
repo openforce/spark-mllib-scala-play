@@ -150,13 +150,6 @@ export class Frontend {
             () => console.log("failed")
         );
 
-        /**
-         * Check if oauth consumer keys are in application conf
-         */
-        API.keys().then(
-            () => $body.removeClass('keys-missing')
-        );
-
         /*
          * Wire the frontend
          */
