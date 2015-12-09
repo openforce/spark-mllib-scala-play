@@ -35,7 +35,7 @@ class Twitter @Inject()(system: ActorSystem) extends Controller {
         case Left(e) => throw e
       }
     }.getOrElse(
-        TWITTER.retrieveRequestToken(configuration.getString("twitter.redirect.url").getOrElse("http://127.0.0.1:9000/authenticate")) match {
+        TWITTER.retrieveRequestToken(configuration.getString("twitter.redirect.url").getOrElse("http://localhost:9000/authenticate")) match {
           case Right(t) => Redirect(TWITTER.redirectUrl(t.token)).withSession("token" -> t.token, "secret" -> t.secret)
           case Left(e) => throw e
         })
