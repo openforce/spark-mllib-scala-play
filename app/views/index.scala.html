@@ -1,8 +1,9 @@
+@(host: String)
 @main(title = "Twitter Sentiment Analysis", subtitle = "Powered by Spark, MLlib, Scala, Akka and Play!") {
 
     <div class="overlay">
-        <ws-element id="socket" url="ws://localhost:9000/eventSocket"></ws-element>
-        <ws-element id="statisticsSocket" url="ws://localhost:9000/statisticsSocket"></ws-element>
+        <ws-element id="socket" url="ws://@{host}/eventSocket"></ws-element>
+        <ws-element id="statisticsSocket" url="ws://@{host}/statisticsSocket"></ws-element>
         <div class="stats-container">
             <h2>Statistics</h2>
             <div class="metrics">

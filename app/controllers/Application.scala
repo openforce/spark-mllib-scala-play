@@ -47,8 +47,9 @@ class Application @Inject()(system: ActorSystem, sparkContext: SparkContext, twi
     } yield Ok(Json.toJson(classificationResults))) recover handleException
   }
 
-  def index = Action {
-    Ok(views.html.index.render)
+  def index = Action { implicit request =>
+    val host = request.headers.get("X-Forwarded-Host").getOrElse(request.host)
+    Ok(views.html.index.render(host))
   }
 
   def eventSocket = WebSocket.acceptWithActor[String, String] { request => out =>
