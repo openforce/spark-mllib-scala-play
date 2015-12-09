@@ -172,8 +172,8 @@ The <a href="#code/app/actors/EventServer.scala">EventServer</a> is created by t
                     it into a mathematical representation, e.g. by using <code>HashingTF</code>,
                     <a target="_blank" href="https://spark.apache.org/docs/latest/mllib-feature-extraction.html#tf-idf">TF-IDF</a> or
                     <a target="_blank" href="https://spark.apache.org/docs/latest/mllib-feature-extraction.html#word2vec">Word2Vec</a>.
-                    These steps have to be performed for every tweet in your dataset. With Spark 1.5 you create the various transformers and the
-                    estimator (with their respective parameters) and put them into a pipeline. The created
+                    These steps have to be performed for every tweet in your dataset. Since Spark 1.2 you create the various transformers and
+                    estimators (with their respective parameters) and put them together into a <code>Pipeline</code>. The created
                     pipeline can now be used for cross validation (instead of only the evaluation algorithm).
                 </p>
             </li>
