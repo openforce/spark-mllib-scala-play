@@ -87,3 +87,6 @@ cleanupCommands in console :=
    """.stripMargin
 
 
+
+
+fork in run := true

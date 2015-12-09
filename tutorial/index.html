@@ -24,6 +24,9 @@
             href="https://dev.twitter.com/oauth/overview/application-owner-access-tokens" target="_blank">https://dev.twitter.com</a>.
     </li>
 </ol>
+  <p>
+    By default the application runs in single-user-mode which means the access tokens configured in your application.conf respectively local.conf will be also used for querying Twitter by keywords. This is fine when you run the application locally and just want to checkout the tutorial. If you want to deploy it publicly you would have to turn single-user-mode off so that OAuth per user is used instead. To do so change the line in your <a href="#code/conf/application.conf">conf/application.conf</a> to <code>twitter.single-user-mode = no</code>.
+  </p>
 </div><div><h2 id="starting-activator-or-sbt">Starting Activator or SBT</h2>
 
 <p>Open a terminal and navigate to the root directory of this project</p>
