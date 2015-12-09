@@ -81,8 +81,7 @@
                 <p>
                     After you've created your Twitter App you can obtain your consumer key and access token with secrets. Please enter them in your application.conf like this:
                 </p>
-                <p>
-                    <pre>
+                <pre>
 twitter {
   consumer {
     key = "CONSUMER_KEY"
@@ -93,8 +92,7 @@ twitter {
     secret = "ACCESS_TOKEN_SECRET"
   }
 }
-                    </pre>
-                </p>
+                </pre>
             </div>
             <div class="push-down"></div>
                 <!-- Main Content -->
@@ -103,6 +101,15 @@ twitter {
             </div>
             <paper-toast id="event-toast"></paper-toast>
         </template>
+
+        <!--
+            Fix for a problem between traceur-runtime and the webcomponents polyfill
+
+            The link[rel=import] polyfill apparently doesn't block following scripts.
+            The problem with that is, that the traceur-runtime tries to load the $ object (which isn't yet loaded) and because it doesn't find it, it throws an error.
+            If we define jQuery here the $ object is accessible for the runtime and the error isn't thrown. Thus the application works as it's supposed to.
+        -->
+        <script src='@routes.Assets.at("javascripts/vendor/jquery.min.js")'></script>
 
         <link rel="import" href='@routes.Assets.at("templates/libraries.html")'>
         <script type="text/javascript" src="@routes.Application.jsRoutes"></script>
