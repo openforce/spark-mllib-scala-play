@@ -11,7 +11,7 @@
         <link rel="stylesheet" href='@routes.Assets.versioned("stylesheets/vendor/font-awesome/css/font-awesome.min.css")'/>
         <link rel="stylesheet" href='@routes.Assets.versioned("stylesheets/main.css")'/>
     </head>
-    <body unresolved class="fullbleed layout vertical not-authenticated keys-missing">
+    <body unresolved class="fullbleed layout vertical not-authenticated">
         <span id="browser-sync-binding"></span>
         <template is="dom-bind" id="app">
             <div class="header">
@@ -71,30 +71,6 @@
                 <a href="@routes.Twitter.authenticate">
                     <button class="twitter-login"></button>
                 </a>
-            </div>
-            <div class="heading-container actions keys-missing-error">
-                <h2>Your Twitter access token and consumer key/secret configuration is missing or incomplete!</h2>
-                <p>
-                    Because Twitter prohibits key/token/password sharing (which makes sense) you have to setup an App at Twitter before you can use this application.
-                    You can create and manage your applications at <a href="https://dev.twitter.com/oauth/overview/application-owner-access-tokens">https://dev.twitter.com</a>
-                </p>
-                <p>
-                    After you've created your Twitter App you can obtain your consumer key and access token with secrets. Please enter them in your application.conf like this:
-                </p>
-                <p>
-                    <pre>
-twitter {
-  consumer {
-    key = "CONSUMER_KEY"
-    secret = "CONSUMER_SECRET"
-  }
-  access {
-    token = "ACCESS_TOKEN"
-    secret = "ACCESS_TOKEN_SECRET"
-  }
-}
-                    </pre>
-                </p>
             </div>
             <div class="push-down"></div>
                 <!-- Main Content -->

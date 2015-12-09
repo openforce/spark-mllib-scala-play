@@ -8,6 +8,7 @@ import actors.TwitterHandler.{Fetch, FetchResponse}
 import akka.actor._
 import akka.event.LoggingReceive
 import classifiers.PredictorProxy
+import controllers.OAuthKeys
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.{PipelineModel, Transformer}
 import org.apache.spark.mllib.classification.LogisticRegressionModel
@@ -24,7 +25,7 @@ object Classifier {
   def props(sparkContext: SparkContext, twitterHandler: ActorRef, onlineTrainer: ActorRef, batchTrainer: ActorRef, predictor: PredictorProxy) =
     Props(new Classifier(sparkContext, twitterHandler, onlineTrainer, batchTrainer, predictor))
 
-  case class Classify(token: String)
+  case class Classify(keyword: String, oAuthKeys: OAuthKeys)
 
   case class Point(tweet: String, tokens: Seq[String])
 
@@ -44,14 +45,14 @@ class Classifier(sparkContext: SparkContext, twitterHandler: ActorRef, onlineTra
 
   override def receive =  LoggingReceive {
 
-    case Classify(token: String) =>
-      log.info(s"Start classifying tweets for token '$token'")
+    case Classify(keyword: String, oAuthKeys: OAuthKeys) =>
+      log.info(s"Start classifying tweets for keyword '$keyword'")
       val originalSender = sender
 
       val handler = context.actorOf(FetchResponseHandler.props(onlineTrainer, batchTrainer, originalSender, sparkContext, predictor), "fetch-response-message-handler")
       log.debug(s"Created handler $handler")
 
-      twitterHandler.tell(Fetch(token), handler)
+      twitterHandler.tell(Fetch(keyword, oAuthKeys), handler)
   }
 }
 

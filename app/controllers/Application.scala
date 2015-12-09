@@ -15,12 +15,9 @@ import play.api.Logger
 import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json.{JsValue, Json}
-import play.api.libs.oauth.OAuthCalculator
-import play.api.libs.ws.WS
-import play.api.mvc.{Action, Controller, Result, WebSocket}
+import play.api.mvc._
 import play.api.routing.JavaScriptReverseRouter
-
-import scala.concurrent.Future
+import twitter.TwitterHelper._
 import scala.concurrent.duration._
 
 @Singleton
@@ -36,15 +33,17 @@ class Application @Inject()(system: ActorSystem, sparkContext: SparkContext, twi
 
   implicit val timeout = Timeout(10 seconds)
 
-  def classify(keyword: String) = Action.async {
-    (for {
-      classifier <- (director ? GetClassifier).mapTo[ActorRef]
-      classificationResults <- (classifier ? Classify(keyword)).map {
-        case c: ClassificationResult => c
-        case TrainingModelRetrievalTimeout => throw TimeoutException("Training models timed out.")
-        case FetchResponseTimeout => throw TimeoutException("Fetching tweets timed out.")
-      }
-    } yield Ok(Json.toJson(classificationResults))) recover handleException
+  def classify(keyword: String) = HasToken(parse.empty) { tokens =>
+    Action.async(parse.empty) { implicit request =>
+      (for {
+        classifier <- (director ? GetClassifier).mapTo[ActorRef]
+        classificationResults <- (classifier ? Classify(keyword, OAuthKeys(consumerKey, tokens))).map {
+          case c: ClassificationResult => c
+          case TrainingModelRetrievalTimeout => throw TimeoutException("Training models timed out.")
+          case FetchResponseTimeout => throw TimeoutException("Fetching tweets timed out.")
+        }
+      } yield Ok(Json.toJson(classificationResults))) recover handleException
+    }
   }
 
   def index = Action {
@@ -66,7 +65,6 @@ class Application @Inject()(system: ActorSystem, sparkContext: SparkContext, twi
       JavaScriptReverseRouter("jsRoutes")(
         routes.javascript.Twitter.authenticated,
         routes.javascript.Application.classify,
-        routes.javascript.Twitter.keys,
         routes.javascript.Twitter.logout
       )
     ).as("text/javascript")

@@ -8,16 +8,6 @@ html, body {
   height: 100%;
 }
 
-.keys-missing, .not-authenticated {
-  overflow: hidden;
-}
-
-.keys-missing {
-  .push-down, nav.navbar.navbar-default.navbar-background {
-    background: #980000;
-  }
-}
-
 h1, h2, h3, h4, h5, h6, .heading {
   font-family: 'Roboto', sans-serif;
   font-weight: 200;
@@ -203,32 +193,13 @@ nav.navbar.navbar-default {
     transition: .3s ease top;
   }
 
-  &.login, &.keys-missing-error {
+  &.login {
     h2 {
       color: #fff;
     }
 
     p {
       color: #f2f2f2;
-    }
-  }
-
-  &.keys-missing-error {
-    top: 250px;
-
-    h2 {
-      margin-bottom: 32px;
-    }
-
-    p, pre {
-      margin-left: auto;
-      margin-right: auto;
-      text-align: left;
-      width: 650px;
-    }
-
-    pre {
-      padding-left: 20px;
     }
   }
 
@@ -291,14 +262,6 @@ nav.navbar.navbar-default {
   }
 }
 
-.keys-missing, .not-authenticated {
-  nav.navbar.navbar-default {
-    .heading {
-      opacity: 1;
-    }
-  }
-}
-
 .not-authenticated {
   .navbar.navbar-default .logout {
     display: none;
@@ -315,18 +278,6 @@ nav.navbar.navbar-default {
 
     &.actions.login {
       top: 300px;
-      display: block;
-    }
-  }
-}
-
-.keys-missing {
-  .heading-container.actions {
-    &.login {
-      display: none;
-    }
-
-    &.keys-missing-error {
       display: block;
     }
   }

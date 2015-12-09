@@ -13,7 +13,7 @@ object TwitterHandler {
 
   def props(sparkContext: SparkContext) = Props(new TwitterHandler(sparkContext))
 
-  case class Fetch(keyword: String)
+  case class Fetch(keyword: String, keys: OAuthKeys)
 
   case class FetchResponse(keyword: String, tweets: Seq[String])
 
@@ -29,9 +29,7 @@ class TwitterHandler(sparkContext: SparkContext) extends Actor with TwitterHandl
 
   override def receive = LoggingReceive {
 
-    case keys: OAuthKeys => oAuthKeys = keys
-
-    case Fetch(keyword) =>
+    case Fetch(keyword, oAuthKeys) =>
       log.debug(s"Received Fetch message with keyword=$keyword from $sender")
       val tweets = TwitterHelper.fetch(keyword, oAuthKeys)
       val originalSender = sender
