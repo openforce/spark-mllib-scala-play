@@ -28,6 +28,8 @@ object TwitterHelper {
 
   val log = Logger(this.getClass)
 
+  val singleUserMode = configuration.getBoolean("twitter.single-user-mode").getOrElse(true)
+
   val maybeConsumerKey = for {
     key <- configuration.getString("twitter.consumer.key") if(!key.isEmpty)
     secret <- configuration.getString("twitter.consumer.secret") if(!secret.isEmpty)
@@ -71,11 +73,19 @@ object TwitterHelper {
   }
 
   def sessionTokenPair(implicit request: RequestHeader): Option[RequestToken] = {
-    for {
-      token <- request.session.get("token")
-      secret <- request.session.get("secret")
-    } yield {
-      RequestToken(token, secret)
+
+    if(singleUserMode) {
+      log.debug(s"Running in single-user-mode where oAuth per user is turned off")
+      // We use the access tokens configured in the application.conf by default as request tokens because
+      // this Activator template is mainly used locally by a single user and not publicly deployed
+      Some(RequestToken(config.getOAuthAccessToken, config.getOAuthAccessTokenSecret))
+    } else {
+      for {
+        token <- request.session.get("token")
+        secret <- request.session.get("secret")
+      } yield {
+        RequestToken(token, secret)
+      }
     }
   }
 
