@@ -47,4 +47,8 @@ lazy val root = (project in file(".")).enablePlugins(PlayScala, SbtWeb)
 
 val sparkMode = sys.env.getOrElse("SPARK_MODE", "local[*]")
 
+mappings in Universal ++=
+  (baseDirectory.value / "data" * "*" get) map
+    (x => x -> ("data/" + x.getName))
+
 fork in run := true
