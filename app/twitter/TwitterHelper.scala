@@ -77,7 +77,7 @@ object TwitterHelper {
   def sessionTokenPair(implicit request: RequestHeader): Option[RequestToken] = {
 
     if(singleUserMode) {
-      log.debug(s"Running in single-user-mode where oAuth per user is turned off")
+      log.debug("Running in single-user-mode where oAuth per user is turned off")
       // We use the access tokens configured in the application.conf by default as request tokens because
       // this Activator template is mainly used locally by a single user and not publicly deployed
       Some(RequestToken(config.getOAuthAccessToken, config.getOAuthAccessTokenSecret))

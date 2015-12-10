@@ -52,12 +52,12 @@ class Application @Inject()(system: ActorSystem, sparkContext: SparkContext, twi
   }
 
   def eventSocket = WebSocket.acceptWithActor[String, String] { request => out =>
-    log.debug(s"Client connected to event socket")
+    log.debug("Client connected to event socket")
     EventListener.props(out, eventServer)
   }
 
   def statisticsSocket = WebSocket.acceptWithActor[JsValue, JsValue] { request => out =>
-    log.debug(s"Client connected to statistics socket")
+    log.debug("Client connected to statistics socket")
     EventListener.props(out, statisticsServer)
   }
 

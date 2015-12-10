@@ -63,8 +63,8 @@ class CorpusInitializer(sparkContext: SparkContext, batchTrainer: ActorRef, onli
   override def receive = LoggingReceive {
 
     case Finish =>
-      log.debug(s"Received Finish message")
-      log.info(s"Terminating streaming context...")
+      log.debug("Received Finish message")
+      log.info("Terminating streaming context...")
       ssc.stop(stopSparkContext = false, stopGracefully = true)
       val msg = s"Send ${posTweets.count} positive and ${negTweets.count} negative tweets to batch and online trainer"
       log.info(msg)
@@ -79,8 +79,8 @@ class CorpusInitializer(sparkContext: SparkContext, batchTrainer: ActorRef, onli
       eventServer ! "Corpus initialization finished"
 
     case LoadFromFs =>
-      log.debug(s"Received LoadFromFs message")
-      val msg = s"Load tweets corpus from file system..."
+      log.debug("Received LoadFromFs message")
+      val msg = "Load tweets corpus from file system..."
       log.info(msg)
       eventServer ! msg
 
@@ -101,8 +101,8 @@ class CorpusInitializer(sparkContext: SparkContext, batchTrainer: ActorRef, onli
 
 
     case InitFromStream =>
-      log.debug(s"Received InitFromStream message")
-      val msg = s"Initialize tweets corpus from twitter stream..."
+      log.debug("Received InitFromStream message")
+      val msg = "Initialize tweets corpus from twitter stream..."
       log.info(msg)
       eventServer ! msg
 

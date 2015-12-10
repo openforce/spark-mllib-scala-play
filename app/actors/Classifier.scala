@@ -132,14 +132,14 @@ class TrainingModelResponseHandler(fetchResponse: FetchResponse, originalSender:
       predict
 
     case TrainingModelRetrievalTimeout =>
-      log.debug(s"Timeout occurred")
+      log.debug("Timeout occurred")
       sendResponseAndShutdown(TrainingModelRetrievalTimeout)
   }
 
   def predict = (onlineFeatures, batchTrainerModel, onlineTrainerModel) match {
 
     case (Some(onlineF), Some(batchM), Some(onlineM)) =>
-      log.debug(s"Values received for online and batch training models")
+      log.debug("Values received for online and batch training models")
       timeoutMessenger.cancel
 
       val batchModelResult = predictor.predict(batchM, fetchResponse)

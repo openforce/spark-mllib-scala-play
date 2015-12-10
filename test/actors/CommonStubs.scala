@@ -16,7 +16,7 @@ class TwitterHandlerProxyStub extends TwitterHandlerProxy with ActorLogging {
 
   override def receive = {
     case Fetch(keyword, keys) => {
-      log.debug(s"Received Fetch message")
+      log.debug("Received Fetch message")
       val tweets = Seq("The new Apple iPhone 6s is awesome", "Apple is overpriced.")
       sender ! FetchResponse(keyword, tweets)
     }
@@ -26,20 +26,20 @@ class TwitterHandlerProxyStub extends TwitterHandlerProxy with ActorLogging {
 class TimingOutTwitterHandlerProxyStub extends TwitterHandlerProxy with ActorLogging {
   def receive = LoggingReceive {
     case Fetch(keyword, keys) =>
-      log.debug(s"Doing nothing - forcing timeout")
+      log.debug("Doing nothing - forcing timeout")
   }
 }
 
 class OnlineTrainerProxyStub extends OnlineTrainerProxy with ActorLogging {
   override def receive = {
     case GetFeatures(fetchResponse) =>
-      log.debug(s"Received GetFeatures message")
+      log.debug("Received GetFeatures message")
       def mockRDD[T]: org.apache.spark.rdd.RDD[T] = null
       val features: RDD[(String, Vector)] = mockRDD[(String, Vector)]
       sender ! OnlineFeatures(Some(features))
 
     case GetLatestModel =>
-      log.debug(s"Received GetLatestModel message")
+      log.debug("Received GetLatestModel message")
       val lr: LogisticRegressionModel = null
       sender ! OnlineTrainerModel(Some(lr))
   }
@@ -48,17 +48,17 @@ class OnlineTrainerProxyStub extends OnlineTrainerProxy with ActorLogging {
 class TimingOutOnlineTrainerProxyStub extends OnlineTrainerProxy with ActorLogging {
   def receive = LoggingReceive {
     case GetFeatures(fetchResponse) =>
-      log.debug(s"Doing nothing - forcing timeout")
+      log.debug("Doing nothing - forcing timeout")
 
     case GetLatestModel =>
-      log.debug(s"Doing nothing - forcing timeout")
+      log.debug("Doing nothing - forcing timeout")
   }
 }
 
 class BatchTrainerProxyStub extends BatchTrainerProxy with ActorLogging {
   override def receive = {
     case GetLatestModel =>
-      log.debug(s"Received GetLatestModel message")
+      log.debug("Received GetLatestModel message")
       val model: Transformer = null
       sender ! BatchTrainerModel(Some(model))
   }
