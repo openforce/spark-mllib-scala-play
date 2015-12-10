@@ -47,4 +47,38 @@ lazy val root = (project in file(".")).enablePlugins(PlayScala, SbtWeb)
 
 val sparkMode = sys.env.getOrElse("SPARK_MODE", "local[*]")
 
+mappings in Universal ++=
+  (baseDirectory.value / "data" * "*" get) map
+    (x => x -> ("data/" + x.getName))
+
+initialCommands in console :=
+  s"""
+    |import org.apache.spark.SparkConf
+    |import org.apache.spark.SparkContext
+    |import org.apache.spark.SparkContext._
+    |
+    |@transient val sc = new SparkContext(
+    |  new SparkConf()
+    |    .setMaster("$sparkMode")
+    |    .setAppName("Console test"))
+    |implicit def sparkContext = sc
+    |import sc._
+    |
+    |@transient val sqlc = new org.apache.spark.sql.SQLContext(sc)
+    |implicit def sqlContext = sqlc
+    |import sqlc._
+    |
+    |def time[T](f: => T): T = {
+    |  import System.{currentTimeMillis => now}
+    |  val start = now
+    |  try { f } finally { println("Elapsed: " + (now - start)/1000.0 + " s") }
+    |}
+    |
+    |""".stripMargin
+
+cleanupCommands in console :=
+  s"""
+     |sc.stop()
+   """.stripMargin
+
 fork in run := true
