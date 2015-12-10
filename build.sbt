@@ -4,8 +4,6 @@ name := """spark-mllib-scala-play"""
 
 version := "0.2.0-SNAPSHOT"
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.4" % "test"
-
 scalaVersion := "2.11.7"
 
 val sparkVersion = "1.5.2"
@@ -21,7 +19,7 @@ resolvers ++= Seq(
   "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/",
   "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/",
    Resolver.url("Typesafe Ivy releases", url("https://repo.typesafe.com/typesafe/ivy-releases"))(Resolver.ivyStylePatterns)
-  )
+)
 
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "2.2.4" % "test",
