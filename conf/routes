@@ -20,5 +20,4 @@ GET        /assets/*file               controllers.Assets.versioned(path="/publi
 # Twitter auth
 GET        /authenticate               @controllers.Twitter.authenticate
 GET        /authenticated              @controllers.Twitter.authenticated
-GET        /keys                       @controllers.Twitter.keys
 GET        /logout                     @controllers.Twitter.logout

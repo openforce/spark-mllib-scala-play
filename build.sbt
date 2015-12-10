@@ -10,16 +10,7 @@ scalaVersion := "2.11.7"
 
 val sparkVersion = "1.5.2"
 
-// // Needed as SBT's classloader doesn't work well with Spark
-// fork := true
-
-// // BUG: unfortunately, it's not supported right now
-// fork in console := true
-
 javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
-
-// add a JVM option to use when forking a JVM for 'run'
-// javaOptions ++= Seq("-Xmx2G")
 
 scalacOptions ++= Seq("-deprecation", "-unchecked")
 
@@ -90,4 +81,4 @@ cleanupCommands in console :=
      |sc.stop()
    """.stripMargin
 
-
+fork in run := true

@@ -24,6 +24,9 @@
             href="https://dev.twitter.com/oauth/overview/application-owner-access-tokens" target="_blank">https://dev.twitter.com</a>.
     </li>
 </ol>
+  <p>
+    By default the application runs in single-user-mode which means the access tokens configured in your application.conf respectively local.conf will be also used for querying Twitter by keywords. This is fine when you run the application locally and just want to checkout the tutorial. If you want to deploy it publicly you would have to turn single-user-mode off so that OAuth per user is used instead. To do so change the line in your <a href="#code/conf/application.conf">conf/application.conf</a> to <code>twitter.single-user-mode = no</code>.
+  </p>
 </div><div><h2 id="starting-activator-or-sbt">Starting Activator or SBT</h2>
 
 <p>Open a terminal and navigate to the root directory of this project</p>
@@ -172,8 +175,8 @@ The <a href="#code/app/actors/EventServer.scala">EventServer</a> is created by t
                     it into a mathematical representation, e.g. by using <code>HashingTF</code>,
                     <a target="_blank" href="https://spark.apache.org/docs/latest/mllib-feature-extraction.html#tf-idf">TF-IDF</a> or
                     <a target="_blank" href="https://spark.apache.org/docs/latest/mllib-feature-extraction.html#word2vec">Word2Vec</a>.
-                    These steps have to be performed for every tweet in your dataset. With Spark 1.5 you create the various transformers and the
-                    estimator (with their respective parameters) and put them into a pipeline. The created
+                    These steps have to be performed for every tweet in your dataset. Since Spark 1.2 you create the various transformers and
+                    estimators (with their respective parameters) and put them together into a <code>Pipeline</code>. The created
                     pipeline can now be used for cross validation (instead of only the evaluation algorithm).
                 </p>
             </li>
@@ -201,34 +204,28 @@ The <a href="#code/app/actors/EventServer.scala">EventServer</a> is created by t
         </p>
         <ol>
             <li>
-                You can choose whether to collect a set of tweets via distant supervision (which is done via the <a
-                href="https://dev.twitter.com/streaming/public">streaming api of twitter</a>, <a
-                href="http://twitter4j.org/en/index.html">Twitter4j</a> and the <code>TwitterUtils</code> provided by Spark),
-                or to use the same corpus as with batch learning. You can configure this in the <a
-                href="#code/conf/application.conf:47">application.conf</a> with the parameter
-                <code>ml.corpus.initialization.streamed</code>). The resulting corpus is used for fitting for instance a TF-IDF model and
-                for generating statistics (see <a href="#code/app/actors/StatisticsServer.scala">StatisticsServer</a>).
-                <br>
-                Distant supervision is done by labeling the tweets based on various indicators. We use emoticons as
+                The <a href="#code/app/actors/OnlineTrainer.scala:66">OnlineTrainer opens a stream</a> and filters the tweets based on various indicators. We use emoticons as
                 the indicator of the sentiment of a tweet. If a tweet contains a positive emoticon (like ":)" or ";)")
                 it is labeled positive. Negative emoticons lead to a negative label (<a href="#code/app/util/SentimentIdentifier.scala">list of emoticons and their labels</a>).
-                If a tweet contains emoticons of both types we use the first emoticon we find as the indicator.
+                This is done via the <a target="_blank" href="https://dev.twitter.com/streaming/public">streaming api of twitter</a>,
+                <a target="_blank" href="http://twitter4j.org/en/index.html">Twitter4j</a> and the
+                <a target="_blank" href="http://spark.apache.org/docs/latest/api/scala/index.html#org.apache.spark.streaming.twitter.TwitterUtils$">TwitterUtils</a> provided by Spark.
             </li>
             <li>
-                The <a href="#code/app/actors/OnlineTrainer.scala:66">OnlineTrainer opens a stream</a>, performs the
-                pre-processing steps on each tweet and hands a <code>DStream</code> of <code>LabeledPoints</code> over to the <a href="#code/app/actors/OnlineTrainer.scala:70">
-                estimator</a>.
+                Within the <code>DStream</code>, so-called mini-batches of <code>RDD[Status]</code> are converted into <code>RDD[LabeledPoint]</code>,
+                where we perform pre-processing (data cleaning and feature engineering) using the same techniques as for batch learning (see <a href="#feature-engineering">feature engineering</a>).
+                The <code>DStream</code> of <code>LabeledPoints</code> is handed over to the <a href="#code/app/actors/OnlineTrainer.scala:70">estimator</a>.
             </li>
             <li>
-                The online trainer uses <code>StreamingLogisticRegressionWithSGD</code> as an estimator.
-                <code>StreamingLogisticRegressionWithSGD</code> is an implementation of logistic regression that supports streaming.
+                The online trainer uses the experimental <a target="_blank" href="http://spark.apache.org/docs/latest/api/scala/index.html#org.apache.spark.mllib.classification.StreamingLogisticRegressionWithSGD">StreamingLogisticRegressionWithSGD</a>
+                as an estimator. <code>StreamingLogisticRegressionWithSGD</code> is an implementation of logistic regression that supports streaming.
                 This is accomplished by using <a target="_blank" href="https://en.wikipedia.org/wiki/Stochastic_gradient_descent">stochastic gradient descent</a>
                 for optimization instead of the normal <a href="https://en.wikipedia.org/wiki/Gradient_descent">gradient descent</a>.
             </li>
         </ol>
         <h3 id="feature-engineering">Feature Engineering</h3>
         Since the lower-level <code>spark.mllib</code> API and thus the <a target="_blank" href="http://spark.apache.org/docs/latest/api/scala/index.html#org.apache.spark.mllib.classification.StreamingLogisticRegressionWithSGD">StreamingLogisticRegressionWithSGD</a>
-        estimator used here does not support <code>Pipeline</code>s, we created our own transformation chain for tweets by using plain function composition.
+        estimator used here does not support <code>Pipeline</code>s, but we wanted to reuse preprocessing code for both approaches (online and batch learning), we created our own transformation chain for tweets by using plain function composition.
         Therefore we created our own <a href="#code/app/features/Transformer.scala:3">Transformer</a> type and provided a <a href="#code/app/features/Transformer.scala:13">DefaultTransformer</a>
         instance which composes tranformations for <a href="#code/app/features/Normalizable.scala">normalization</a>, <a href="#code/app/features/Stemmable.scala">stemming</a>
         and <a href="#code/app/features/Tokenizer.scala">creating n-grams</a> which serves as a good starting point so far.

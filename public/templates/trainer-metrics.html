@@ -45,8 +45,8 @@
                 var areaUnderRoc = (Math.round(stat.areaUnderRoc * 10000) / 100).toString().replace('.', ',');
 
                 var v = {
-                    accuracy,
-                    areaUnderRoc
+                    accuracy: accuracy,
+                    areaUnderRoc: areaUnderRoc
                 };
 
                 if (stat.trainer === "Online") {

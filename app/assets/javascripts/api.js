@@ -86,10 +86,6 @@ export class API {
         });
     }
 
-    static keys() {
-        return API.simpleRequest(Routes.keys);
-    }
-
     static logout() {
         return API.simpleAuthenticatedRequest(Routes.logout);
     }
