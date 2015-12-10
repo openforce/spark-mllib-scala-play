@@ -9,8 +9,10 @@ import play.api.libs.json.Json
 import play.api.libs.oauth.{ConsumerKey, RequestToken, OAuthCalculator}
 import play.api.libs.ws.WS
 import play.api.mvc.{Action, BodyParser, RequestHeader}
+import twitter4j.{Twitter, Query, TwitterFactory}
 import twitter4j.conf.{Configuration, ConfigurationBuilder}
 import scala.concurrent.Future
+import scala.collection.JavaConversions._
 
 case class TwitterStatus(text: String)
 
@@ -89,14 +91,24 @@ object TwitterHelper {
     }
   }
 
-  def fetch(keyword: String, oAuthKeys: OAuthKeys): Future[Seq[String]] = {
+  def fetch(keyword: String, oAuthKeys: OAuthKeys) = {
     log.info(s"Start fetching tweets filtered by keyword=$keyword")
+    val query = new Query(s"$keyword -filter:retweets").lang("en")
+    val result = twitter(oAuthKeys).search(query)
+    result.getTweets.take(100).map(_.getText).toList
+  }
 
-    WS.url(s"$fetchUrl$keyword")
-      .sign(OAuthCalculator(oAuthKeys.consumerKey, oAuthKeys.requestToken))
-      .get
-      .map(result => result.json.as[TwitterStatuses])
-      .map(_.statuses.map(status => status.text))
+  def twitter(oAuthKeys: OAuthKeys): Twitter = {
+    val config = new ConfigurationBuilder()
+      .setDebugEnabled(true)
+      .setOAuthConsumerKey(oAuthKeys.consumerKey.key)
+      .setOAuthConsumerSecret(oAuthKeys.consumerKey.secret)
+      .setOAuthAccessToken(oAuthKeys.requestToken.token)
+      .setOAuthAccessTokenSecret(oAuthKeys.requestToken.secret)
+      .setUseSSL(true)
+      .build()
+    val twitterFactory = new TwitterFactory(config)
+    twitterFactory.getInstance()
   }
 
 }
