@@ -2,7 +2,7 @@ import play.sbt.PlayScala
 
 name := """spark-mllib-scala-play"""
 
-version := "1.0.0"
+version := "1.0.1"
 
 scalaVersion := "2.11.7"
 
@@ -15,7 +15,7 @@ scalacOptions ++= Seq("-deprecation", "-unchecked")
 resolvers ++= Seq(
   Resolver.defaultLocal,
   Resolver.mavenLocal,
-  "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository",
+  "Local Maven Repository" at "file:///"+Path.userHome.absolutePath+"/.m2/repository",
   "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/",
   "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/",
    Resolver.url("Typesafe Ivy releases", url("https://repo.typesafe.com/typesafe/ivy-releases"))(Resolver.ivyStylePatterns)
