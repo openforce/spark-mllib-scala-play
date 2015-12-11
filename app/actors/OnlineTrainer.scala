@@ -12,9 +12,10 @@ import org.apache.spark.sql.SQLContext
 import org.apache.spark.streaming.twitter.TwitterUtils
 import org.apache.spark.streaming.{Duration, StreamingContext}
 import play.api.Play.{configuration, current}
-import twitter.Tweet
+import twitter.{TwitterHelper, Tweet}
 import twitter4j.auth.OAuthAuthorization
 import util.SentimentIdentifier
+import features.Transformers.default._
 
 object OnlineTrainer {
 
@@ -38,7 +39,7 @@ class OnlineTrainer(sparkContext: SparkContext, director: ActorRef) extends Acto
 
   val ssc = new StreamingContext(sparkContext, Duration(1000))
 
-  val twitterAuth = Some(new OAuthAuthorization(TwitterHandler.config))
+  val twitterAuth = Some(new OAuthAuthorization(TwitterHelper.config))
 
   val sqlContext = new SQLContext(sparkContext)
 
@@ -53,7 +54,7 @@ class OnlineTrainer(sparkContext: SparkContext, director: ActorRef) extends Acto
   override def receive = LoggingReceive {
 
     case Train(corpus) =>
-      log.debug(s"Received Train message with tweets corpus")
+      log.debug("Received Train message with tweets corpus")
       if (dumpCorpus) corpus.map(t => (t.tokens.toSeq, t.sentiment)).toDF().write.parquet(dumpPath)
       val tfIdf = TfIdf(corpus)
       maybeTfIdf = Some(tfIdf)
@@ -61,7 +62,7 @@ class OnlineTrainer(sparkContext: SparkContext, director: ActorRef) extends Acto
         .setNumIterations(200)
         .setInitialWeights(Vectors.zeros(Features.coefficients))
         .setStepSize(1.0))
-      log.info(s"Start twitter stream for online training")
+      log.info("Start twitter stream for online training")
       val stream = TwitterUtils.createStream(ssc, twitterAuth, filters = SentimentIdentifier.sentimentEmoticons)
         .filter(t => t.getUser.getLang == "en" && !t.isRetweet)
         .map { Tweet(_) }
@@ -71,7 +72,7 @@ class OnlineTrainer(sparkContext: SparkContext, director: ActorRef) extends Acto
       director ! OnlineTrainingFinished
 
     case GetFeatures(fetchResponse) =>
-      log.debug(s"Received GetFeatures message")
+      log.debug("Received GetFeatures message")
       val features = maybeTfIdf map { tfIdf =>
         val rdd: RDD[String] = sparkContext.parallelize(fetchResponse.tweets)
         rdd.cache()
@@ -80,7 +81,7 @@ class OnlineTrainer(sparkContext: SparkContext, director: ActorRef) extends Acto
       sender ! OnlineFeatures(features)
 
     case GetLatestModel =>
-      log.debug(s"Received GetLatestModel message")
+      log.debug("Received GetLatestModel message")
       val maybeModel = logisticRegression.map(_.latestModel())
       sender ! OnlineTrainerModel(maybeModel)
 

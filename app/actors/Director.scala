@@ -2,11 +2,10 @@ package actors
 
 import actors.BatchTrainer.BatchTrainerModel
 import actors.OnlineTrainer.OnlineTrainerModel
-import akka.actor.{ActorLogging, Actor, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.event.LoggingReceive
 import classifiers.Predictor
 import org.apache.spark.SparkContext
-import play.api.Logger
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._

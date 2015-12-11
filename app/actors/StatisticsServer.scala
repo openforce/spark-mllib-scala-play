@@ -14,6 +14,7 @@ import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 import play.api.libs.json.{Json, Reads, Writes}
 import twitter.Tweet
 import util.EnumUtils
+import features.Transformers.default._
 
 object StatisticsServer {
 
@@ -55,13 +56,21 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
 
   var dfCorpus: Option[DataFrame] = None
 
+  var batchTrainerModel: Option[BatchTrainerModel] = None
+
+  var onlineTrainerModel: Option[OnlineTrainerModel] = None
+
   import sqlContext.implicits._
 
   override def receive = LoggingReceive {
 
-    case batchModel: BatchTrainerModel => testBatchModel(batchModel)
+    case batchModel: BatchTrainerModel =>
+      batchTrainerModel = Some(batchModel)
+      testBatchModel(batchModel) foreach sendMessage
 
-    case onlineModel: OnlineTrainerModel => testOnlineModel(onlineModel)
+    case onlineModel: OnlineTrainerModel =>
+      onlineTrainerModel = Some(onlineModel)
+      testOnlineModel(onlineModel) foreach sendMessage
 
     case Corpus(c: RDD[Tweet]) =>
       corpus = Some(c)
@@ -70,6 +79,10 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
     case Subscribe =>
       context.watch(sender)
       clients += sender
+      for {
+        model <- batchTrainerModel
+        statistics <- testBatchModel(model)
+      } yield sender ! statistics
 
     case Unsubscribe =>
       context.unwatch(sender)
@@ -77,7 +90,7 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
 
   }
 
-  def testOnlineModel(onlineTrainerModel: OnlineTrainerModel) =
+  def testOnlineModel(onlineTrainerModel: OnlineTrainerModel): Option[Statistics] =
     for {
       model <- onlineTrainerModel.model
       corpus <- corpus
@@ -91,10 +104,10 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
       val accuracy = correct / total
       val statistics = Statistics(TrainerType.Online, model.toString(), metrics.areaUnderROC(), accuracy)
       logStatistics(statistics)
-      sendMessage(statistics)
+      statistics
     }
 
-  def testBatchModel(batchTrainerModel: BatchTrainerModel) =
+  def testBatchModel(batchTrainerModel: BatchTrainerModel): Option[Statistics] =
     for {
       model <- batchTrainerModel.model
       dfCorpus <- dfCorpus
@@ -114,7 +127,7 @@ class StatisticsServer(sparkContext: SparkContext) extends Actor with ActorLoggi
         .reduce(_ + _) / dfCorpus.count()
       val statistics = Statistics(TrainerType.Batch, model.toString(), metrics.areaUnderROC(), accuracy)
       logStatistics(statistics)
-      sendMessage(statistics)
+      statistics
     }
 
   def sendMessage(msg: Statistics) = clients.foreach(_ ! msg)

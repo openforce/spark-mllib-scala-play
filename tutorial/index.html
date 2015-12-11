@@ -1,108 +1,246 @@
 <html>
 <head>
-    <title>Template Template - Activator Template</title>
+    <title>Twitter Sentiment Analysis with Apache Spark, MLlib, Scala, Akka, and Play Framework</title>
 </head>
 <body>
 <div>
-    <h2>Template Structure</h2>
+    <h2 id="twitter-sentiment-analysis">Twitter Sentiment Analysis</h2>
+    <h3>powered by Apache Spark, MLlib, Scala, Akka, and Play Framework</h3>
 
     <p>
-        You can contribute your own templates to Activator by simply creating a new project in the correct structure and then publishing it.  This tutorial will walk you through the structure of a template and show you how to publish templates.
+        With this tutorial template we show how to automatically classify the sentiment of Twitter messages leveraging the Typesafe Stack and Apache Spark. These messages are classified as either positive or negative with respect to a query term. Users who want to research the sentiment of products before purchase, or companies that want to monitor the public sentiment of their brands can make use of this kind of application.
+    </p>
+    <p>
+      The Activator template consists of backend components using Scala, Spark, Akka and the Play Framework in their most recent versions and Polymer for the UI. Main focus of this template is the orchestration of these technologies by an example of using machine learning for classifying the sentiment of Twitter messages using MLlib. Details on the machine learning implementation can be found in the
+      <a href="#tutorial/7">machine learning section</a>. If you want to see this template in action please refer to
+      <a href="http://sentiment.openforce.com">http://sentiment.openforce.com</a> (you will need a Twitter user to login).
+    </p>
+  <p>
+    The fundamental idea of sentiment classification used in this template is based on <a href="http://cs.stanford.edu/people/alecmgo/papers/TwitterDistantSupervision09.pdf"  target="_blank">the paper by Alec Go et al.</a> and its related implementation by <a  href="http://www.sentiment140.com" target="_blank">Sentiment140</a>
+  </p>
+</div>
+<div>
+    <h2 id="setup-instructions">Setup Instructions</h2>
+
+    <p>
+      <ol>
+        <li>
+      To run the application you will need <a href="http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html"  target="_blank">Java </a> and either <a href="http://www.scala-sbt.org" target="_blank">SBT</a> or <a href="https://typesafe.com/activator" target="_blank">Activator</a> installed.</li>
+
+    <li>Insert your Twitter access token and consumer key/secret pairs in <a href="#code/conf/application.conf">conf/application.conf</a>.
+        For generating a token, please refer to <a
+            href="https://dev.twitter.com/oauth/overview/application-owner-access-tokens" target="_blank">https://dev.twitter.com</a>.
+    </li>
+</ol>
+  <p>
+    By default the application runs in single-user-mode which means the access tokens configured in your application.conf respectively local.conf will be also used for querying Twitter by keywords. This is fine when you run the application locally and just want to checkout the tutorial. If you want to deploy it publicly you would have to turn single-user-mode off so that OAuth per user is used instead. To do so change the line in your <a href="#code/conf/application.conf">conf/application.conf</a> to <code>twitter.single-user-mode = no</code>.
+  </p>
+</div><div><h2 id="starting-activator-or-sbt">Starting Activator or SBT</h2>
+
+<p>Open a terminal and navigate to the root directory of this project</p>
+
+<p>If you have Activator installed and it is in your path you can use Activator&rsquo;s UI with <code>activator ui</code>. It will start Activator and open the web-based UI in your browser automatically. (If not, open <a href="http://localhost:8888" target="_blank">localhost:8888</a> in your browser.)</p>
+<p>With in the Activator UI you can use the <a class="shortcut" href="#run">run</a> link to start the Twitter Sentiment Analysis Application.</p>
+
+<p>
+If you want to start it via SBT use <code>sbt run</code> and navigate your browser to <a href="http://localhost:9000" target="_blank">localhost:9000</a>.
+</p>
+
+<p>
+  If starting the application takes a very long time or even times out it may be due to a known <a href="https://github.com/typesafehub/activator/issues/1036">Activator issue</a>.
+  In that case do the following before starting with <code>sbt run</code></p>
+    <ul>
+      <li>Delete the sbt-fork-run.sbt file</li>
+      <li>Remove the line <code>fork in run := true</code>(added automatically when you start activator) from the bottom of build.sbt</li>
+    </ul>
+<p>
+  Without the fork option, which is needed by Activator the application should start within a few seconds.
+</p>
+</div><div><h2 id="building-and-testing">Building and Testing</h2>
+
+<p>To ensure that the basic environment is working, compile the code and run the tests. You can use the Activator UI&rsquo;s <a class="shortcut" href="#test">test</a> link or the sbt command <code>sbt test</code>.</p>
+
+<p>All dependencies are downloaded, the code is compiled, and the tests are executed. This will take a while the first time and the tests should pass without error.</p>
+</div>
+
+<div>
+    <h2 id="classification-workflow">Classification Workflow</h2>
+
+    <p>
+        The following diagram shows the actor communication workflow for classification:
     </p>
 
+    <img src="tutorial/images/actors.jpg"/>
+
+    <p>The <a href="#code/app/controllers/Application.scala">Application</a> controller serves HTTP requests from the client/browser and obtains <code>ActorRefs</code> for <a href="#code/app/actors/EventServer.scala">EventServer</a>, <a href="#code/app/actors/StatisticsServer.scala">StatisticsServer</a> and <a href="#code/app/actors/Director.scala">Director</a>.</p>
+
+<p>The <a href="#code/app/actors/Director.scala">Director</a> is the root of the Actor hierarchy, which creates all other durable (long lived) actors except <a href="#code/app/actors/StatisticsServer.scala">StatisticsServer</a>  and <a href="#code/app/actors/EventServer.scala">EventServer</a>. Besides supervision of the child actors it builds the bridge between Play and Akka by handing over the <a href="#code/app/actors/Classifier.scala">Classifier</a> <code>ActorRefs</code> to the controller. Moreover, when trainings of the estimators within <a href="#code/app/actors/BatchTrainer.scala">BatchTrainer</a> and <a href="#code/app/actors/OnlineTrainer.scala">OnlineTrainer</a> are finished, this actor passes the latest Machine Learning models to the <a href="#code/app/actors/StatisticsServer">StatisticsServer</a> (see figure below). For the <a href="#code/app/actors/OnlineTrainer">OnlineTrainer</a> statistics generation is scheduled every 5 seconds.
+</p>
+
+
+The <a href="#code/app/actors/Classifier.scala">Classifier</a> creates a <a href="#code/app/actors/Classifier.scala">FetchResponseHandler</a> actor and tells the <code>TwitterHandler</code> with a <code>Fetch</code> message (and the <code>ActorRef</code> of the <a href="#code/app/actors/Classifier.scala">FetchResponseHandler</a>) to get the latest tweets by a given token or query.
+
+Once the <code>TwitterHandler</code> has fetched some Tweets, the <code>FetchResponse</code> is sent to the <a href="#code/app/actors/Classifier.scala">FetchResponseHandler</a>.
+
+The <a href="#code/app/actors/Classifier.scala">FetchResponseHandler</a> creates a <code>TrainingModelResponseHandler</code> actor and tells the <a href="#code/app/actors/BatchTrainer.scala">BatchTrainer</a> and <a href="#code/app/actors/OnlineTrainer.scala">OnlineTrainer</a> to pass the latest model to <code>TrainingModelResponseHandler</code>. It registers itself as a monitor for <code>TrainingModelResponseHandler</code> and when this actor terminates it stops itself as well.
+
+The <code>TrainingModelResponseHandler</code> collects the models, vectorizes Tweets makes predictions and sends the results to the original sender (the <a href="#code/app/controllers/Application.scala">Application</a> controller). The original sender is passed through the ephemeral (short lived) actors, indicated by the yellow dotted line in the figure above.
+
+</div>
+<div>
+  <h2>Tell don't Ask</h2>
+  <p>
+  The standard way of sending messages to actors in Akka is using the tell pattern, which is a fire-and-forget approach. Alternatively Akka
+  supports the ask pattern, which returns a future as response for a sent message. This is very convenient for some scenarios like
+  bridging a Play controller with an Akka actor system as you can see implemented in the <a href="#code/app/controllers/Application.scala">Application</a> controller. By using a future the application
+  doesn't have to block the current thread to handle the task. This saves resources which can be used for example to handle more requests concurrently.
+  However there are tradeoffs that come with the ask pattern. Every time an actor asks another actor for a response using futures a new <code>PromiseActorRef</code> is created. This is a waste of resources.
+  Additionally using the ask pattern requires a timeout to be defined. This leads often to hard to debug applications, as stacktraces don't give you a clue which actor timed out. This is due to the fact, that futures
+  don't have names like actors. In a larger application it is also difficult to set the right value for a timeout so that various timeouts set at different places in the application work together in a sensible way.
+  </p>
+  <p>
+  To avoid all that it is preferable to use the fire-and-forget approach with the lightweight tell pattern. In this application we used the so called <bold>"cameo pattern"</bold> defined by Jamie Allen in his book <a href="http://shop.oreilly.com/product/0636920028789.do">Effective Akka</a>.
+  </p>
+  <p>
+  All participants of this pattern can be found in the <a href="#code/app/actors/Classifier.scala">Classifier</a> file. The <code>Classifier</code> creates the <code>FetchResponseHandler</code>
+  and passes its reference to the <code>TwitterHandler</code> telling it to send the fetched tweets to the handler instead of itself.
+  <p>When we provide a different sender reference we cannot use the exclamation mark syntax <code>twitterHandler ! Fetch(token)</code> but
+  have to use the <code>tell</code> method directly <code>twitterHandler.tell(Fetch(token), handler)</code>.</p>
+
+  The <code>FetchResponseHandler</code> creates a <code>TrainingModelResponseHandler</code> which it sends to the <code>OnlineTrainer</code> and <code>BatchTrainer</code> as sender reference.
+  The <code>TrainingModelResponseHandler</code> is the actor which collects all results and only sends the final <code>ClassificationResult</code> message to the original sender when all result have been received.
+  The original sender (<a href="#code/app/controllers/Application">Application</a> controller) is passed through all of these actors.
+  </p>
+
+  <p>
+    You might have noticed the timeout messages <code>FetchResponseTimeout</code> and <code>TrainingModelRetrievalTimeout</code> in the <a href="#code/app/actors/Classifier.scala">Classifier</a> file.
+    As mentioned earlier with the ask pattern you have to define an implicit timeout, as you can see in the <a href="#code/app/controllers/Application">Application</a> controller.
+    When you use tell instead you don't have to do that but if you want you can still enforce timeout semantics on the request by scheduling
+    a timeout message that you send to yourself. In regards to the <code>TrainingModelResponseHandler</code> it means that the handler is scheduling a <code>TrainingModelRetrievalTimeout</code> to be sent in 3 seconds.
+    If the handler doesn't receive a result from the online or batch trainer beforehand it will send the timeout message to the original sender. However if it receives the result in time it will cancel the scheduler and return the actual results.
+  </p>
+  <p>
+    As you can see from the code using the cameo actors (<code>FetchResponseHandler</code> and <code>TrainingModelResponseHandler</code>) avoids the use of any ask pattern and its associated problems.
+  </p>
+</div>
+<div>
+    <h2 id="model-training-and-statistics">Model Training and Statistics</h2>
+
     <p>
-        There are three main parts to a template:
+      The following diagram shows the actors involved in training the machine learning estimators and serving statistics about their predictive performance:
+
+        <img src="tutorial/images/actors2.jpg"/>
+
+<p>
+  The <a href="#code/app/actors/BatchTrainer.scala">BatchTrainer</a> receives a <code>Train</code> message as soon as a corpus (a collection of labeled tweets) has been initialized. This corpus is initialized by the <a href="#code/app/actors/CorpusInitializer.scala">CorpusInitializer</a> and can either be created on-the-fly via Spark's <code>TwitterUtils.createStream</code> (with automatic labeling by using emoticons ":)" and ":(") or a static corpus provided by <a href="http://www.sentiment140.com">Sentiment140</a> which is read from a CSV file. Which one to choose can be configured via <code>ml.corpus.initialization.streamed</code> in <a href="#code/conf/application.conf">conf/application.conf</a>. For batch training we use the high-level <code>org.apache.spark.ml</code> API. We use <bold>Grid Search Cross Validation</bold> to get the best hyperparameters for our <code>LogisticRegression</code> model.
+</p>
+<p>
+The <a href="#code/app/actors/OnlineTrainer.scala">OnlineTrainer</a> receives a <code>Train</code> message with a corpus (an <code>RDD[Tweet]</code>) upon successful initialization just like the <a href="#code/app/actors/BatchTrainer.scala">BatchTrainer</a>. For the online learning approach we use the experimental <code>StreamingLogisticRegressionWithSGD</code> estimator which, as the name implies, uses <bold>Stochastic Gradient Descent</bold> to update the model continually on each Mini-Batch (RDD) of the <code>DStream</code> created via <code>TwitterUtils.createStream</code>.
+</p>
+<p>
+The <a href="#code/app/actors/StatisticsServer.scala">StatisticsServer</a> receives <code>OnlineTrainerModel</code> and <code>BatchTrainerModel</code> messages and creates performance metrics like <bold>Accuracy, Area under the ROC Curve</bold> and so forth which in turn are forwarded to the subscribed <code>EventListeners</code> and finally sent to the client (browser) via <bold>Web Socket</bold>.
+</p>
+<p>
+The <a href="#code/app/actors/EventListener.scala">EventListener</a>s are created for each client via the Play Framework built-in <code>WebSocket.acceptWithActor</code>. <code>EventListeners</code> subscribe for <a href="#code/app/actors/EventServer.scala">EventServer</a> and <a href="#code/app/actors/StatisticsServer.scala">StatisticsServer</a>. When the connections terminate (e.g. browser window is closed) the respective <code>EventListener</code> shuts down and unsubscribes from <code>EventServer</code> and/or <code>StatisticsServer</code> via the Actor's <code>postStop()</code> hook.
+</p>
+<p>
+The <a href="#code/app/actors/EventServer.scala">EventServer</a> is created by the <a href="#code/app/controllers/Application.scala">Application</a> controller and forwards event messages (progress of corpus initialization) to the client (also via <code>Web Socket</code>).
+</p>
+</div>
+    <div>
+        <h2 id="machine-learning">Machine Learning</h2>
+        <p>
+            In this application we implemented two approaches to solve the classification problem
+            (see <a target="_blank" href="https://en.wikipedia.org/wiki/Statistical_classification">statistical
+            classification on Wikipedia</a> for more information about the problem).
+        </p>
+        <h3>Batch Learning</h3>
+        <p>
+            Batch learning is a <a target="_blank" href="https://en.wikipedia.org/wiki/Supervised_learning">supervised learning</a> approach,
+            where an estimator (e.g. <a target="_blank" href="https://en.wikipedia.org/wiki/Logistic_regression">logistic regression</a>)
+            gets optimized according to given labels within the training data.
+            In our case that meant creating a set of labeled tweets (a so-called corpus) and feed it to the algorithm. We used
+            the corpus provided by <a target="_blank" href="http://sentiment140.com">Sentiment140</a>. They did a great job, so
+            be sure to check their work out as well. The following diagram shows how this is done by the <a href="#code/app/actors/BatchTrainer.scala:42">BatchTrainer</a>.
+        </p>
+        <img src="tutorial/images/batch_training.jpg"
+             alt="Flow diagram of the training performed by the batch trainer"/>
+        <p>
+            As you can see the batch model training consists of three parts.
+        </p>
         <ol>
-            <li>A Project with an SBT build</li>
-            <li>A Tutorial for the Project</li>
-            <li>Template Metadata</li>
+            <li>
+                An estimator is created. In our implementation we use our own transformation pipeline (which is described in more detail in chapter <a href="#feature-engineering">feature engineering</a>) and a <a target="_blank"
+                href="http://spark.apache.org/docs/latest/api/scala/index.html#org.apache.spark.ml.feature.HashingTF">bag-of-words model</a> to preprocess the data and <a
+                target="_blank" href="https://en.wikipedia.org/wiki/Logistic_regression">logististic
+                regression</a> as the estimation algorithm.
+                <br/>
+                Spark 1.2 introduced the idea of <a href="http://spark.apache.org/docs/latest/ml-guide.html#pipeline">pipelines</a>.
+                A pipeline by itself is just a description of a workflow. Take the following example.
+                <p id="pipeline">
+                    Your input is a tweet. Before you can feed it to an estimator you may want to remove stop
+                    words, stem the resulting text and perform whatever pre-processing step comes to mind before you finally convert
+                    it into a mathematical representation, e.g. by using <code>HashingTF</code>,
+                    <a target="_blank" href="https://spark.apache.org/docs/latest/mllib-feature-extraction.html#tf-idf">TF-IDF</a> or
+                    <a target="_blank" href="https://spark.apache.org/docs/latest/mllib-feature-extraction.html#word2vec">Word2Vec</a>.
+                    These steps have to be performed for every tweet in your dataset. Since Spark 1.2 you create the various transformers and
+                    estimators (with their respective parameters) and put them together into a <code>Pipeline</code>. The created
+                    pipeline can now be used for cross validation (instead of only the evaluation algorithm).
+                </p>
+            </li>
+            <li>
+                A <a target="_blank" href="https://en.wikipedia.org/wiki/Hyperparameter_optimization#Grid_search">parameter
+                grid</a> is used to try different parameter values of the estimator.
+            </li>
+            <li>
+                Cross validation is a tuning technique to find the best hyperparameters for your estimator. You just need to
+                define a set of values for each estimator or transformer in your pipeline, provide an evaluator and the pipeline itself.
+                Then you need to define the number of folds which defines in how many partitions your corpus is splitted
+                in order to perform training and validation. That is you define a number of hold-out sets used for testing
+                the parameter grid. See also <a target="_blank" href="https://spark.apache.org/docs/latest/ml-guide.html#example-model-selection-via-cross-validation">model selection via cross-validation</a>.
+            </li>
         </ol>
-    </p>
-    
-    <p>
-        These three pieces are combined into a project that can be used in Activator and as a regular SBT project.  With Activator, when a user creates a new app from a template, the tutorial and the metadata are not included in the new project.
-    </p>
-</div>
-<div>
-    <h2>Project Structure</h2>
-
-    <p>
-        The project for an Activator template should have the following layout:
-        <ul>
-            <li><a href="#code/app" class="shortcut">/app</a> contains the Java and Scala app source code</li>
-            <li><a href="#code/project" class="shortcut">/project</a> contains the SBT metadata and optionally any SBT plugin definitions</li>
-            <li><a href="#code/build.sbt" class="shortcut">/build.sbt</a> or <a href="#code/project/Build.scala" class="shortcut">/project/Build.scala</a> contains the app's SBT build definition</li>
-            <li><a href="#code/test" class="shortcut">/test</a> contains the Java and Scala test source source</li>
-            <li><a href="#code/conf" class="shortcut">/conf</a> optionally contains the <a href="#code/conf/routes" class="shortcut">/conf/routes</a> and <a href="#code/conf/application.conf" class="shortcut">/conf/application.conf</a> files for Play apps</li>
-        </ul>
-    </p>
-    
-    <p>
-        The project must set a required SBT version in the <a href="#code/project/build.properties" class="shortcut">/project/build.properties</a> file, like:
-        <pre><code>sbt.version=0.12.3</code></pre>
-    </p>
-    
-    <p>
-        To create consistency across all templates in Activator, the default <a href="#code/build.sbt" class="shortcut">/build.sbt</a> follows the Play defaults and changes the main source directories from <code>/src/main/java</code> and <code>/src/main/scala</code> to just <code>/app</code>.  It also changes the main test directories from <code>/src/test/java</code> and <code>/src/test/scala</code> to just <code>/test</code>.  Please keep these settings in place since users can easily change them after creating a new project.
-    </p>
-</div>
-<div>
-    <h2>Tutorial Structure</h2>
-
-    <p>
-        The tutorial you are reading right now comes from the <a href="#code/tutorial/index.html" class="shortcut">/tutorial/index.html</a> file.
-    </p>
-    
-    <p>
-        Each section of the tutorial must be in a <code>&lt;div&gt;</code> tag that is inside the <code>&lt;body&gt;</code> tag.  Each section must have a single <code>&lt;h2&gt;</code> tag that contains the section's title.
-    </p>
-    
-    <p>
-        The tutorial can provide shortcut links to places in Activator by using an anchor link (<code>#</code>) and the <code>shortcut</code> class, like:
-        <pre><code>&lt;a href="#code/tutorial/index.html" class="shortcut"&gt;/tutorial/index.html&lt;/a&gt;</code></pre>
-    </p>
-    
-    <p>
-        Code blocks can use <code>&lt;pre&gt;&lt;code&gt;&lt;/code&gt;&lt;/pre&gt;</code> tags, like:
-        <pre><code>&lt;pre&gt;&lt;code&gt;println("hello, Scala!")
-val foo = "Bar"&lt;/code&gt;&lt;/pre&gt;</code></pre>
-    </p>
-    
-    <p>
-        In-line code can use just the <code>&lt;code&gt;&lt;/code&gt;</code> tag, like:
-        <pre><code>The &lt;code&gt;val foo = "Bar"&lt;/code&gt; statement sets &lt;code&gt;foo&lt;/code&gt; to &lt;code&gt;Bar&lt;/code&gt;</code></pre>
-    </p>
-    
-    <p>
-        Images can be embedded by putting them in the <a href="#code/tutorial" class="shortcut">tutorial</a> directory and using a relative URL to the image, like:
-        <pre><code>&lt;img src="tutorial/tutorial.png"&gt;</code></pre>
-        Example:<br/>
-        <img src="tutorial/tutorial.png" width="100%">
-    </p>
-</div>
-<div>
-    <h2>Metadata Structure</h2>
-
-    <p>
-        Activator templates must provide an <a href="#code/activator.properties" class="shortcut">activator.properties</a> file which contains the template metadata.  The required properties are:
-        <ul>
-            <li><code>name</code> - A globally unique, URL friendly name for the template</li>
-            <li><code>title</code> - A human readable name for the template</li>
-            <li><code>description</code> - A plain text description for the template</li>
-            <li><code>tags</code> - A comma-seperated list of tags for the template</li>
-        </ul>
-        These values will be verified when you publish your template.
-    </p>
-</div>
-<div>
-    <h2>Publishing</h2>
-
-    <p>
-        At this time templates must first be published publicly on <a href="http://github.com" target="_blank">GitHub</a>.  Then they can be added to Activator through the <a href="http://typesafe.com/activator/template/contribute" target="_blank">Activator Contribution</a> page.  There you can enter a Git URL, like:
-        <pre><code>git://github.com/typesafehub/activator-template-template.git</code></pre>
-        This will use the <code>master</code> branch of your repo.
-        Soon publishing will happen automatically whenever your GitHub repo changes (for the specified branch).  Until then you will need to go through this process every time you want to publish a new version.
-    </p>
-</div>
+        <h3>Online Learning</h3>
+        <p>
+            This approach is inspired by <a href="http://cs.stanford.edu/people/alecmgo/papers/TwitterDistantSupervision09.pdf" target="_blank">the work of Alec Go et al.</a>
+            using a technique called distant supervision. We use a similar approach by leveraging the streaming capabilities of Spark. In the following diagram you see
+            how the approach works.
+        </p>
+        <img src="tutorial/images/online_training.jpg" alt="Flow diagram of the distant supervision approach"/>
+        <p>
+            This approach consists of the following steps.
+        </p>
+        <ol>
+            <li>
+                The <a href="#code/app/actors/OnlineTrainer.scala:66">OnlineTrainer opens a stream</a> and filters the tweets based on various indicators. We use emoticons as
+                the indicator of the sentiment of a tweet. If a tweet contains a positive emoticon (like ":)" or ";)")
+                it is labeled positive. Negative emoticons lead to a negative label (<a href="#code/app/util/SentimentIdentifier.scala">list of emoticons and their labels</a>).
+                This is done via the <a target="_blank" href="https://dev.twitter.com/streaming/public">streaming api of twitter</a>,
+                <a target="_blank" href="http://twitter4j.org/en/index.html">Twitter4j</a> and the
+                <a target="_blank" href="http://spark.apache.org/docs/latest/api/scala/index.html#org.apache.spark.streaming.twitter.TwitterUtils$">TwitterUtils</a> provided by Spark.
+            </li>
+            <li>
+                Within the <code>DStream</code>, so-called mini-batches of <code>RDD[Status]</code> are converted into <code>RDD[LabeledPoint]</code>,
+                where we perform pre-processing (data cleaning and feature engineering) using the same techniques as for batch learning (see <a href="#feature-engineering">feature engineering</a>).
+                The <code>DStream</code> of <code>LabeledPoints</code> is handed over to the <a href="#code/app/actors/OnlineTrainer.scala:70">estimator</a>.
+            </li>
+            <li>
+                The online trainer uses the experimental <a target="_blank" href="http://spark.apache.org/docs/latest/api/scala/index.html#org.apache.spark.mllib.classification.StreamingLogisticRegressionWithSGD">StreamingLogisticRegressionWithSGD</a>
+                as an estimator. <code>StreamingLogisticRegressionWithSGD</code> is an implementation of logistic regression that supports streaming.
+                This is accomplished by using <a target="_blank" href="https://en.wikipedia.org/wiki/Stochastic_gradient_descent">stochastic gradient descent</a>
+                for optimization instead of the normal <a href="https://en.wikipedia.org/wiki/Gradient_descent">gradient descent</a>.
+            </li>
+        </ol>
+        <h3 id="feature-engineering">Feature Engineering</h3>
+        Since the lower-level <code>spark.mllib</code> API and thus the <a target="_blank" href="http://spark.apache.org/docs/latest/api/scala/index.html#org.apache.spark.mllib.classification.StreamingLogisticRegressionWithSGD">StreamingLogisticRegressionWithSGD</a>
+        estimator used here does not support <code>Pipeline</code>s, but we wanted to reuse preprocessing code for both approaches (online and batch learning), we created our own transformation chain for tweets by using plain function composition.
+        Therefore we created our own <a href="#code/app/features/Transformer.scala:3">Transformer</a> type and provided a <a href="#code/app/features/Transformer.scala:13">DefaultTransformer</a>
+        instance which composes tranformations for <a href="#code/app/features/Normalizable.scala">normalization</a>, <a href="#code/app/features/Stemmable.scala">stemming</a>
+        and <a href="#code/app/features/Tokenizer.scala">creating n-grams</a> which serves as a good starting point so far.
+        Now you can easily adapt tweet transformation (e.g. by adding trigrams or stopword removal) by bringing your own implicit <code>Transformer</code>
+        implementation into the surrounding scope of your <a href="#code/app/twitter/Tweet.scala:21">Tweet.tokens</a>
+        or <a href="#code/app/twitter/Tweet.scala:23">Tweet.toLabeledPoint</a> calls. In our two machine learning approaches we used our implicit
+        <code>DefaultTransformer</code> just by doing a <code>import features.Transformers.default._</code>.
+    </div>
 </body>
 </html>

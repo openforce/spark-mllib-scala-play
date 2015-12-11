@@ -1,7 +1,12 @@
 .background() {
-  background-image: -webkit-linear-gradient(-360deg, #f6911e, #febd36);
-  background-image: ~"-webkit-linear-gradient(0deg, #f6911e, #febd36, )";
-  background-image: ~"linear-gradient(90deg,#f6911e,#febd36,,,,,,,,)";
+  background: rgba(247,156,52,1);
+  background: ~"-moz-linear-gradient(left, rgba(247,156,52,1) 0%, rgba(230,179,39,1) 100%)";
+  background: ~"-webkit-gradient(left top, right top, color-stop(0%, rgba(247,156,52,1)), color-stop(100%, rgba(230,179,39,1)))";
+  background: ~"-webkit-linear-gradient(left, rgba(247,156,52,1) 0%, rgba(230,179,39,1) 100%)";
+  background: ~"-o-linear-gradient(left, rgba(247,156,52,1) 0%, rgba(230,179,39,1) 100%)";
+  background: ~"-ms-linear-gradient(left, rgba(247,156,52,1) 0%, rgba(230,179,39,1) 100%)";
+  background: ~"linear-gradient(to right, rgba(247,156,52,1) 0%, rgba(230,179,39,1) 100%)";
+  filter: ~"progid:DXImageTransform.Microsoft.gradient( startColorstr='#f79c34', endColorstr='#e6b327', GradientType=1 )";
 }
 
 html, body {
@@ -91,6 +96,7 @@ nav.navbar.navbar-default {
   .navbar-right {
     position: absolute;
     right: 0;
+    z-index: 1;
   }
 
   .navbar-brand {
@@ -106,7 +112,8 @@ nav.navbar.navbar-default {
     margin-top: 10px;
 
     li {
-      padding: 20px 30px;
+      padding: 20px;
+      display: inline-block;
 
       a {
         color: #fff;
@@ -177,16 +184,49 @@ nav.navbar.navbar-default {
     }
   }
 
-  &.search {
+  &.show-results.search {
+    top: ~"calc(100% - 100px)";
+
+    paper-input {
+      width: 98%;
+    }
+  }
+
+  &.actions {
+    display: none;
     top: ~"calc(20% + 275px)";
     transition: .3s ease top;
+  }
 
-    &.show-results {
-      top: ~"calc(100% - 100px)";
+  &.login {
+    h2 {
+      color: #fff;
+    }
 
-      paper-input {
-        width: 98%;
-      }
+    p {
+      color: #f2f2f2;
+    }
+  }
+
+  &.login {
+    .twitter-login {
+      background: url("/public-assets/images/sign-in-with-twitter-gray.png") center center no-repeat;
+      height: 35px;
+      width: 160px;
+      border: none;
+    }
+  }
+
+  &.search {
+    .message {
+      display: block;
+      font-size: 16px;
+      padding: 10px 20px;
+      background: #fff;
+      width: 640px;
+      margin: -45px auto 0;
+      z-index: 1;
+      position: relative;
     }
 
     paper-input {
@@ -224,6 +264,33 @@ nav.navbar.navbar-default {
         }
       }
     }
+  }
+}
+
+.not-authenticated {
+  .navbar.navbar-default .logout {
+    display: none;
+  }
+
+  .heading-container {
+    &.headings {
+      top: 10px;
+
+      h1, h2, .icons {
+        display: none;
+      }
+    }
+
+    &.actions.login {
+      top: 300px;
+      display: block;
+    }
+  }
+}
+
+.authenticated {
+  .heading-container.actions.search {
+    display: block;
   }
 }
 

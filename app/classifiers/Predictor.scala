@@ -9,6 +9,7 @@ import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{SQLContext, Row}
 import twitter.{LabeledTweet, Tweet}
+import features.Transformers.default._
 
 trait PredictorProxy {
 
@@ -32,11 +33,9 @@ class Predictor(sparkContext: SparkContext) extends PredictorProxy {
         LabeledTweet(tweet, prediction.toString)
       }
 
-  override def predict(onlineTrainingModel: LogisticRegressionModel, onlineFeatures: RDD[(String, Vector)]) = {
-
+  override def predict(onlineTrainingModel: LogisticRegressionModel, onlineFeatures: RDD[(String, Vector)]) =
     onlineFeatures.map { case (tweet, vector) =>
       LabeledTweet(tweet, onlineTrainingModel.predict(vector).toString)
     } collect()
-  }
 
 }

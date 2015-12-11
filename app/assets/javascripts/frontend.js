@@ -5,8 +5,8 @@ import { WebSocket } from './websocket.js';
 export class Frontend {
 
     constructor() {
-        this.api = new API();
         this.chart = new Chart();
+        this.$search = $('.search');
     }
 
     handleScrolling() {
@@ -59,6 +59,7 @@ export class Frontend {
     setupWebSockets() {
         var eventToast = document.querySelector('#event-toast');
         var metrics = document.querySelector("trainer-metrics");
+        var $search = $('.search');
 
         new WebSocket("#socket").on("onopen", (socket) => {
             console.log('Establish connection');
@@ -78,6 +79,11 @@ export class Frontend {
 
             if (data.trainer == "Online") {
                 this.chart.push(data.accuracy);
+            } else {
+                $search
+                    .find('paper-input').prop('disabled', null)
+                    .end()
+                    .find('.message').velocity('fadeOut')
             }
         });
     }
@@ -124,6 +130,7 @@ export class Frontend {
         var $batchTwitterList = $('.batch-results');
         var $onlineTwitterList = $('.online-results');
 
+        var $body = $('body');
         var $content = $('.content');
         var progressBar = document.querySelector('.paper-progress');
         var searchForm = document.querySelector('.search');
@@ -131,9 +138,17 @@ export class Frontend {
         var container = document.querySelector('#mainContainer');
 
         this.handleScrolling();
-
         this.chart.wire();
+
         this.setupWebSockets();
+
+        /**
+         * Check if the user is authenticated. If not show the login form
+         */
+        API.authenticated().then(
+            () => $body.addClass('authenticated').removeClass('not-authenticated'),
+            () => console.log("failed")
+        );
 
         /*
          * Wire the frontend
@@ -146,7 +161,7 @@ export class Frontend {
 
             $content.velocity("scroll", {duration: 350, offset: -175});
 
-            this.api.classify(searchBox.value)
+            API.classify(searchBox.value)
                 .then((json) => {
                     var batchResults = json.batchModelResult;
                     var onlineResults = json.onlineModelResult;

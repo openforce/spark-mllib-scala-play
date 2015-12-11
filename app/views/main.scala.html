@@ -11,7 +11,7 @@
         <link rel="stylesheet" href='@routes.Assets.versioned("stylesheets/vendor/font-awesome/css/font-awesome.min.css")'/>
         <link rel="stylesheet" href='@routes.Assets.versioned("stylesheets/main.css")'/>
     </head>
-    <body unresolved class="fullbleed layout vertical">
+    <body unresolved class="fullbleed layout vertical not-authenticated keys-missing">
         <span id="browser-sync-binding"></span>
         <template is="dom-bind" id="app">
             <div class="header">
@@ -21,6 +21,9 @@
                             <img alt="Brand" src='@routes.Assets.at("images/logo.png")'>
                         </a>
                         <ul class="navbar-right">
+                            <li class="logout">
+                                <a href="/logout">Logout</a>
+                            </li>
                             <li>
                                 <a href="http://www.openforce.com">About</a>
                             </li>
@@ -47,21 +50,66 @@
                     </li>
                 </ul>
             </div>
-            <form class="heading-container search">
+            <form class="heading-container actions search batch-trainer-not-done">
                 <div class="paper-input">
-                    <paper-input label="Keyword" autofocus>
-                        <paper-icon-button suffix icon="search" id="start-predicting"></paper-icon-button>
+                    <paper-input label="Keyword" autofocus disabled id="search-input">
+                        <paper-icon-button suffix icon="search" id="start-predicting" type="submit"></paper-icon-button>
                     </paper-input>
+                    <div class="message text-danger">
+                        BatchTrainer is still training.
+                    </div>
                 </div>
             </form>
+            <div class="heading-container actions login">
+                <h2>Twitter authentication</h2>
+                <div>
+                    <p>
+                        Before you can use the application please login with your Twitter account.<br />
+                        <small>(This is needed because of Twitter API regulations.</small>)
+                    </p>
+                </div>
+                <a href="@routes.Twitter.authenticate">
+                    <button class="twitter-login"></button>
+                </a>
+            </div>
+            <div class="heading-container actions keys-missing-error">
+                <h2>Your Twitter access token and consumer key/secret configuration is missing or incomplete!</h2>
+                <p>
+                    Because Twitter prohibits key/token/password sharing (which makes sense) you have to setup an App at Twitter before you can use this application.
+                    You can create and manage your applications at <a href="https://dev.twitter.com/oauth/overview/application-owner-access-tokens">https://dev.twitter.com</a>
+                </p>
+                <p>
+                    After you've created your Twitter App you can obtain your consumer key and access token with secrets. Please enter them in your application.conf like this:
+                </p>
+                <pre>
+twitter {
+  consumer {
+    key = "CONSUMER_KEY"
+    secret = "CONSUMER_SECRET"
+  }
+  access {
+    token = "ACCESS_TOKEN"
+    secret = "ACCESS_TOKEN_SECRET"
+  }
+}
+                </pre>
+            </div>
             <div class="push-down"></div>
                 <!-- Main Content -->
             <div class="content">
                 @content
             </div>
             <paper-toast id="event-toast"></paper-toast>
-                <!--<event-log></event-log>-->
         </template>
+
+        <!--
+            Fix for a problem between traceur-runtime and the webcomponents polyfill
+
+            The link[rel=import] polyfill apparently doesn't block following scripts.
+            The problem with that is, that the traceur-runtime tries to load the $ object (which isn't yet loaded) and because it doesn't find it, it throws an error.
+            If we define jQuery here the $ object is accessible for the runtime and the error isn't thrown. Thus the application works as it's supposed to.
+        -->
+        <script src='@routes.Assets.at("javascripts/vendor/jquery.min.js")'></script>
 
         <link rel="import" href='@routes.Assets.at("templates/libraries.html")'>
         <script type="text/javascript" src="@routes.Application.jsRoutes"></script>

@@ -16,3 +16,8 @@ GET        /jsRoutes                   @controllers.Application.jsRoutes
 # Assets
 GET        /public-assets/*file        controllers.Assets.at(path="/public", file)
 GET        /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
+
+# Twitter auth
+GET        /authenticate               @controllers.Twitter.authenticate
+GET        /authenticated              @controllers.Twitter.authenticated
+GET        /logout                     @controllers.Twitter.logout

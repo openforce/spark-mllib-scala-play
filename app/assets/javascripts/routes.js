@@ -4,5 +4,7 @@
  * @type {{classify: function}}
  */
 export var Routes = {
-    classify: (keyword) => jsRoutes.controllers.Application.classify(keyword).url
+    authenticated: jsRoutes.controllers.Twitter.authenticated().url,
+    classify: (keyword) => jsRoutes.controllers.Application.classify(keyword).url,
+    logout: jsRoutes.controllers.Twitter.logout().url
 };

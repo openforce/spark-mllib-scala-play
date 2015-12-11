@@ -13,10 +13,11 @@ import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SQLContext}
 import twitter.Tweet
+import features.Transformers.default._
 
 object BatchTrainer {
 
-  def props(sparkContext: SparkContext, receptionist: ActorRef) = Props(new BatchTrainer(sparkContext, receptionist: ActorRef))
+  def props(sparkContext: SparkContext, director: ActorRef) = Props(new BatchTrainer(sparkContext, director: ActorRef))
 
   case class BatchTrainerModel(model: Option[Transformer])
 
@@ -26,7 +27,7 @@ object BatchTrainer {
 
 trait BatchTrainerProxy extends Actor
 
-class BatchTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends Actor with ActorLogging with BatchTrainerProxy {
+class BatchTrainer(sparkContext: SparkContext, director: ActorRef) extends Actor with ActorLogging with BatchTrainerProxy {
 
   import BatchTrainer._
 
@@ -39,9 +40,9 @@ class BatchTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends A
   override def receive = LoggingReceive {
 
     case Train(corpus: RDD[Tweet]) =>
-      log.debug(s"Received Train message with tweets corpus")
-      log.info(s"Start batch training")
-      val data: DataFrame = corpus.map(t => (t.text, t.sentiment, t.tokens.toSeq)).toDF("tweet", "label", "tokens")
+      log.debug("Received Train message with tweets corpus")
+      log.info("Start batch training")
+      val data: DataFrame = corpus.map(t => (t.text, t.sentiment, t.tokens)).toDF("tweet", "label", "tokens")
       val hashingTF = new HashingTF()
         .setInputCol("tokens")
         .setOutputCol("features")
@@ -61,10 +62,10 @@ class BatchTrainer(sparkContext: SparkContext, receptionist: ActorRef) extends A
       model = Some[Transformer](cv.fit(data).bestModel)
       log.info("Batch training finished")
 
-      receptionist ! BatchTrainingFinished
+      director ! BatchTrainingFinished
 
     case GetLatestModel =>
-      log.debug(s"Received GetLatestModel message")
+      log.debug("Received GetLatestModel message")
       sender ! BatchTrainerModel(model)
       log.debug(s"Returned model $model")
 
