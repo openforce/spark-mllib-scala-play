@@ -10,7 +10,7 @@ The fundamental idea of sentiment classification used in this template is based 
 
 ## Setup Instructions
 
-Assuming that you have [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html) and [Sbt](http://www.scala-sbt.org/) already installed on your machine please do:
+Assuming that you have [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html), [Sbt](http://www.scala-sbt.org/) and [Node.js](https://nodejs.org) already installed on your machine please do:
 
 1. Clone this repository: `git clone git@github.com:openforce/spark-mllib-scala-play.git`
 1. Change into the newly created directory: `cd spark-mllib-scala-play`
