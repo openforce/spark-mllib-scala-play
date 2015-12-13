@@ -10,14 +10,14 @@ The fundamental idea of sentiment classification used in this template is based 
 
 ## Setup Instructions
 
-Assuming that you have [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html), [Sbt](http://www.scala-sbt.org/) and [Node.js](https://nodejs.org) already installed on your machine please do:
+Make sure that you have [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html), either [Sbt](http://www.scala-sbt.org/) or [Typesafe Activator](http://www.typesafe.com/community/core-tools/activator-and-sbt) and [Node.js](https://nodejs.org) already installed on your machine. You should have at least two cores available on this machine since Spark streaming (used by the `OnlineTrainer`) will occupy one core. Hence, to be able to process the data the application needs at least one more resource.
 
 1. Clone this repository: `git clone git@github.com:openforce/spark-mllib-scala-play.git`
 1. Change into the newly created directory: `cd spark-mllib-scala-play`
-1. Insert your Twitter access token and consumer key/secret pairs in `application.conf`. For generating a token, please refer to [dev.twitter.com](https://dev.twitter.com/oauth/overview/application-owner-access-tokens).  By default the application runs in single-user-mode which means the access tokens configured in your application.conf respectively local.conf will be also used for querying Twitter by keywords. This is fine when you run the application locally and just want to checkout the tutorial. If you want to deploy it publicly you would have to turn single-user-mode off so that OAuth per user is used instead. To do so change the line in your ```conf/application.conf``` to ```twitter.single-user-mode = no```.
+1. Insert your Twitter access token and consumer key/secret pairs in `application.conf`. For generating a token, please refer to [dev.twitter.com](https://dev.twitter.com/oauth/overview/application-owner-access-tokens).  By default the application runs in single-user-mode which means the access tokens configured in your `application.conf` respectively `local.conf` will be also used for querying Twitter by keywords. This is fine when you run the application locally and just want to checkout the tutorial. _Note_: If you want to run the application in production mode you would have to turn single-user-mode off so that OAuth per user is used instead. To do so change the line in your ```conf/application.conf``` to ```twitter.single-user-mode = no```. Also make sure to provide an [application secret](https://www.playframework.com/documentation/2.4.x/Production#The-application-secret).
 1. Launch SBT: `sbt run` or ACTIVATOR: `./activator ui` (If you want to start the application as Typesafe Activator Template)
 1. Navigate your browser to: <http://localhost:9000>
-1. If necessary change the twitter.redirect.url in application.conf to the url the application actually uses
+1. If necessary change the `twitter.redirect.url` in `application.conf` to the url the application actually uses
 1. If necessary (if twitter changes the url to its *fetch tweets service*) change the twitter.fetch.url in application.conf to the new one. Ensure that the last url parameter is the query string, the application will append the keyword at the end of the url.
 
 If starting the application takes a very long time or even times out it may be due to a known [Activator issue](https://github.com/typesafehub/activator/issues/1036).
