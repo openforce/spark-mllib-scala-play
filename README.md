@@ -1,4 +1,6 @@
-# Typesafe Activator tutorial for Apache Spark, MLlib, Scala, Akka and Play Framework
+# Twitter Sentiment Analysis 
+
+## Typesafe Activator tutorial for Apache Spark, MLlib, Scala, Akka and Play Framework
 
 [![TravisCI](https://travis-ci.org/openforce/spark-mllib-scala-play.svg?branch=master)](https://travis-ci.org/openforce/spark-mllib-scala-play/)
 
